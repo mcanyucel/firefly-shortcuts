@@ -22,7 +22,7 @@ class AuthManager {
     final refreshToken = await _secureStorage.read(key: _keyRefreshToken);
     final expiryStr = await _secureStorage.read(key: _keyExpiry);
 
-    if (accessToken != null && refreshToken != null) {
+    if (accessToken != null) {
       _state = AuthState(
         accessToken: accessToken,
         refreshToken: refreshToken,

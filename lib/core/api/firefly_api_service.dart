@@ -39,6 +39,11 @@ class FireflyApiService {
     await _dio.post('$base/api/v1/transactions', data: request.toJson());
   }
 
+  Future<void> testConnection() async {
+    final base = await _settings.getServerUrl() ?? '';
+    await _dio.get('$base/api/v1/about');
+  }
+
   Future<List<T>> _fetchAllPages<T>(
     String path,
     T Function(Map<String, dynamic>) fromJson,

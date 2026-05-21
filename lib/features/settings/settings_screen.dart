@@ -53,7 +53,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             serverUrl: _serverUrlController.text.trim(),
             clientId: _clientIdController.text.trim(),
             redirectUrl: _redirectUrlController.text.trim(),
-            personalAccessToken: _patController.text.trim(),
+            personalAccessToken: _patController.text.replaceAll(RegExp(r'\s+'), ''),
           );
       if (mounted) {
         ScaffoldMessenger.of(
@@ -73,9 +73,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     setState(() => _isConnecting = true);
     try {
       await _save();
-      final pat = _patController.text.trim();
+      final pat = _patController.text.replaceAll(RegExp(r'\s+'), '');
       if (pat.isNotEmpty) {
         await ref.read(authProvider.notifier).loginWithPat(pat);
+        if (mounted) context.go('/home');
       } else {
         final success = await ref.read(authProvider.notifier).login();
         if (!success && mounted) {
@@ -85,6 +86,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
           );
         }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Connection failed: $e')));
       }
     } finally {
       if (mounted) setState(() => _isConnecting = false);

@@ -27,7 +27,13 @@ class AuthNotifier extends _$AuthNotifier {
 
   Future<void> loginWithPat(String pat) async {
     await ref.read(authManagerProvider).loginWithPat(pat);
-    state = ref.read(authManagerProvider).state;
+    try {
+      await ref.read(fireflyApiServiceProvider).testConnection();
+      state = ref.read(authManagerProvider).state;
+    } catch (e) {
+      await ref.read(authManagerProvider).logout();
+      rethrow;
+    }
   }
 
   Future<void> logout() async {

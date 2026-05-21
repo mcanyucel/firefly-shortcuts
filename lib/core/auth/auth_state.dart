@@ -12,7 +12,7 @@ class AuthState {
       refreshToken = null,
       accessTokenExpiry = null;
 
-  bool get isAuthenticated => accessToken != null && refreshToken != null;
+  bool get isAuthenticated => accessToken != null;
 
   bool get isOAuth => refreshToken != null;
 
