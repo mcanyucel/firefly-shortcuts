@@ -6,6 +6,7 @@ import '../../core/auth/auth_notifier.dart';
 import '../../core/database/daos/shortcut_dao.dart';
 import '../../core/models/transaction_type.dart';
 import '../../core/providers/core_providers.dart';
+import '../../core/widget/widget_update_service.dart';
 import '../../core/providers/dao_providers.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -17,6 +18,19 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   final Set<int> _executing = {};
+
+  // On app start, ensure widgets are updated with latest shortcuts and settings
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await WidgetUpdateService.update(
+        shortcutDao: ref.read(shortcutDaoProvider),
+        settings: ref.read(settingsRepositoryProvider),
+        authManager: ref.read(authManagerProvider),
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -183,6 +197,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
     if (confirmed == true) {
       await ref.read(shortcutDaoProvider).deleteShortcut(item.shortcut.id);
+      WidgetUpdateService.update(
+          shortcutDao: ref.read(shortcutDaoProvider),
+          settings: ref.read(settingsRepositoryProvider),
+          authManager: ref.read(authManagerProvider),
+        );
     }
   }
 

@@ -6,6 +6,7 @@
   import '../../core/api/models/reference_dtos.dart';
   import '../../core/providers/core_providers.dart';
   import '../../core/providers/dao_providers.dart';
+  import '../../core/widget/widget_update_service.dart';
   import 'sync_state.dart';
 
   part 'sync_notifier.g.dart';
@@ -101,6 +102,13 @@
       await ref
           .read(secureStorageProvider)
           .write(key: _keyLastSync, value: now.toIso8601String());
+
+      await WidgetUpdateService.update(
+        shortcutDao: ref.read(shortcutDaoProvider),
+        settings: ref.read(settingsRepositoryProvider),
+        authManager: ref.read(authManagerProvider),
+      );
+      
       state = state.copyWith(isSyncing: false, lastSyncTime: now);
     }
 
