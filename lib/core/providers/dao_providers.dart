@@ -30,3 +30,7 @@ TagDao tagDao(Ref ref) => TagDao(ref.watch(appDatabaseProvider));
 @Riverpod(keepAlive: true)
 ShortcutDao shortcutDao(Ref ref) =>
     ShortcutDao(ref.watch(appDatabaseProvider));
+
+@riverpod
+  Stream<List<ShortcutDetail>> shortcutList(Ref ref) =>
+      ref.watch(shortcutDaoProvider).watchAllWithDetails();

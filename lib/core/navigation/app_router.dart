@@ -1,4 +1,5 @@
 import 'package:firefly_shortcuts/features/home/home_screen.dart';
+import 'package:firefly_shortcuts/features/shortcut_editor/shortcut_editor_screen.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,6 +19,17 @@ GoRouter appRouter(Ref ref) {
       ),
       GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
       GoRoute(path: '/sync', builder: (context, state) => const SyncScreen()),
+      GoRoute(
+        path: '/shortcut/new',
+        builder: (context, state) => const ShortcutEditorScreen(),
+      ),
+      GoRoute(
+        path: '/shortcut/:id',
+        builder: (context, state) {
+          final id = int.parse(state.pathParameters['id']!);
+          return ShortcutEditorScreen(shortcutId: id);
+        },
+      ),
     ],
   );
 }

@@ -294,3 +294,44 @@ final class ShortcutDaoProvider
 }
 
 String _$shortcutDaoHash() => r'faae47a494582f21e814251627b2003d0e32eb1e';
+
+@ProviderFor(shortcutList)
+final shortcutListProvider = ShortcutListProvider._();
+
+final class ShortcutListProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<ShortcutDetail>>,
+          List<ShortcutDetail>,
+          Stream<List<ShortcutDetail>>
+        >
+    with
+        $FutureModifier<List<ShortcutDetail>>,
+        $StreamProvider<List<ShortcutDetail>> {
+  ShortcutListProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'shortcutListProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$shortcutListHash();
+
+  @$internal
+  @override
+  $StreamProviderElement<List<ShortcutDetail>> $createElement(
+    $ProviderPointer pointer,
+  ) => $StreamProviderElement(pointer);
+
+  @override
+  Stream<List<ShortcutDetail>> create(Ref ref) {
+    return shortcutList(ref);
+  }
+}
+
+String _$shortcutListHash() => r'8d5ef9a93fb18b2f02023013774c674f3453c391';
