@@ -102,6 +102,13 @@ class AuthManager {
     }
   }
 
+  Future<void> loginWithPat(String pat) async {
+    await _secureStorage.delete(key: _keyRefreshToken);
+    await _secureStorage.delete(key: _keyExpiry);
+    await _secureStorage.write(key: _keyAccessToken, value: pat);
+    _state = AuthState(accessToken: pat);
+  }
+
   Future<void> logout() async {
     await _secureStorage.delete(key: _keyAccessToken);
     await _secureStorage.delete(key: _keyRefreshToken);

@@ -17,6 +17,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   late final TextEditingController _serverUrlController;
   late final TextEditingController _clientIdController;
   late final TextEditingController _redirectUrlController;
+  late final TextEditingController _patController;
   bool _isConnecting = false;
 
   @override
@@ -25,6 +26,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _serverUrlController = TextEditingController();
     _clientIdController = TextEditingController();
     _redirectUrlController = TextEditingController();
+    _patController = TextEditingController();
   }
 
   @override
@@ -32,6 +34,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _serverUrlController.dispose();
     _clientIdController.dispose();
     _redirectUrlController.dispose();
+    _patController.dispose();
     super.dispose();
   }
 
@@ -39,6 +42,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _serverUrlController.text = state.serverUrl;
     _clientIdController.text = state.clientId;
     _redirectUrlController.text = state.redirectUrl;
+    _patController.text = state.personalAccessToken;
   }
 
   Future<void> _save() async {
@@ -49,6 +53,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             serverUrl: _serverUrlController.text.trim(),
             clientId: _clientIdController.text.trim(),
             redirectUrl: _redirectUrlController.text.trim(),
+            personalAccessToken: _patController.text.trim(),
           );
       if (mounted) {
         ScaffoldMessenger.of(
@@ -67,11 +72,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Future<void> _connect() async {
     setState(() => _isConnecting = true);
     try {
-      final success = await ref.read(authProvider.notifier).login();
-      if (!success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Login failed or was cancelled')),
-        );
+      await _save();
+      final pat = _patController.text.trim();
+      if (pat.isNotEmpty) {
+        await ref.read(authProvider.notifier).loginWithPat(pat);
+      } else {
+        final success = await ref.read(authProvider.notifier).login();
+        if (!success && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('OAuth login failed or was cancelled'),
+            ),
+          );
+        }
       }
     } finally {
       if (mounted) setState(() => _isConnecting = false);
@@ -90,7 +103,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       }
     });
 
-    // Navigate to home when authentication succeeds
     ref.listen(authProvider, (prev, next) {
       if (next.isAuthenticated && !(prev?.isAuthenticated ?? false)) {
         context.go('/home');
@@ -119,11 +131,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            'Firefly III Connection',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 16),
+          _sectionTitle(context, 'Server'),
+          const SizedBox(height: 12),
           TextField(
             controller: _serverUrlController,
             decoration: const InputDecoration(
@@ -134,15 +143,46 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             keyboardType: TextInputType.url,
             autocorrect: false,
           ),
+          const SizedBox(height: 24),
+          _sectionTitle(context, 'Personal Access Token'),
+          const SizedBox(height: 4),
+          Text(
+            'Takes priority over OAuth if filled.',
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: Colors.grey),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _patController,
+            decoration: const InputDecoration(
+              labelText: 'Personal Access Token',
+              hintText:
+                  'Firefly III → Profile → OAuth → Personal Access Tokens',
+              border: OutlineInputBorder(),
+            ),
+            maxLines: 5,
+            minLines: 3,
+            autocorrect: false,
+          ),
+          const SizedBox(height: 24),
+          _sectionTitle(context, 'OAuth2'),
+          const SizedBox(height: 4),
+          Text(
+            'Used when no Personal Access Token is provided.',
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: Colors.grey),
+          ),
           const SizedBox(height: 12),
           TextField(
             controller: _clientIdController,
             decoration: const InputDecoration(
               labelText: 'Client ID',
-              hintText: 'Numeric OAuth2 client ID from Firefly III',
+              hintText: '12345678-1234-1234-1234-123456789abc',
               border: OutlineInputBorder(),
             ),
-            keyboardType: TextInputType.number,
+            keyboardType: TextInputType.text,
             autocorrect: false,
           ),
           const SizedBox(height: 12),
@@ -150,7 +190,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             controller: _redirectUrlController,
             decoration: const InputDecoration(
               labelText: 'Redirect URL',
-              hintText: 'com.mustafacanyucel.firefly_shortcuts:/oauth2redirect',
               border: OutlineInputBorder(),
             ),
             autocorrect: false,
@@ -160,50 +199,94 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           const SizedBox(height: 32),
           const Divider(),
           const SizedBox(height: 16),
-          _buildAuthSection(context, authState),
+          _sectionTitle(context, 'Connection'),
+          const SizedBox(height: 12),
+          _buildConnectionStatus(context, authState),
+          const SizedBox(height: 16),
+          if (authState.isAuthenticated)
+            OutlinedButton(
+              onPressed: _disconnect,
+              child: const Text('Disconnect'),
+            )
+          else
+            FilledButton(
+              onPressed: _isConnecting ? null : _connect,
+              child: _isConnecting
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Connect'),
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildAuthSection(BuildContext context, AuthState authState) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+  Widget _buildConnectionStatus(BuildContext context, AuthState authState) {
+    if (!authState.isAuthenticated) {
+      return _statusRow(
+        icon: Icons.cancel,
+        color: Colors.red,
+        text: 'Not connected',
+      );
+    }
+
+    if (authState.isOAuth) {
+      return _statusRow(
+        icon: Icons.check_circle,
+        color: Colors.green,
+        text: 'Connected via OAuth',
+      );
+    }
+
+    final expiry = authState.patExpiry;
+    if (expiry == null) {
+      return _statusRow(
+        icon: Icons.check_circle,
+        color: Colors.green,
+        text: 'Connected via Access Token',
+      );
+    }
+
+    final daysLeft = expiry.difference(DateTime.now()).inDays;
+    if (daysLeft <= 0) {
+      return _statusRow(
+        icon: Icons.error,
+        color: Colors.red,
+        text: 'Access Token expired — please reconnect',
+      );
+    }
+    if (daysLeft <= 30) {
+      return _statusRow(
+        icon: Icons.warning,
+        color: Colors.orange,
+        text: 'Access Token expires in $daysLeft days',
+      );
+    }
+    return _statusRow(
+      icon: Icons.check_circle,
+      color: Colors.green,
+      text: 'Connected via Access Token ($daysLeft days remaining)',
+    );
+  }
+
+  Widget _statusRow({
+    required IconData icon,
+    required Color color,
+    required String text,
+  }) {
+    return Row(
       children: [
-        Text('Authentication', style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Icon(
-              authState.isAuthenticated ? Icons.check_circle : Icons.cancel,
-              color: authState.isAuthenticated ? Colors.green : Colors.red,
-              size: 16,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              authState.isAuthenticated ? 'Connected' : 'Not connected',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        if (authState.isAuthenticated)
-          OutlinedButton(
-            onPressed: _disconnect,
-            child: const Text('Disconnect'),
-          )
-        else
-          FilledButton(
-            onPressed: _isConnecting ? null : _connect,
-            child: _isConnecting
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('Connect to Firefly III'),
-          ),
+        Icon(icon, color: color, size: 16),
+        const SizedBox(width: 8),
+        Expanded(child: Text(text)),
       ],
     );
+  }
+
+  Widget _sectionTitle(BuildContext context, String title) {
+    return Text(title, style: Theme.of(context).textTheme.titleMedium);
   }
 }

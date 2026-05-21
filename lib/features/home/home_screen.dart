@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+  import 'package:flutter/material.dart';
   import 'package:flutter_riverpod/flutter_riverpod.dart';
   import 'package:go_router/go_router.dart';
   import '../../core/auth/auth_notifier.dart';
@@ -20,8 +20,12 @@ import 'package:flutter/material.dart';
           backgroundColor: Theme.of(context).colorScheme.inversePrimary,
           actions: [
             IconButton(
+              icon: const Icon(Icons.sync),
+              onPressed: () => context.push('/sync'),
+            ),
+            IconButton(
               icon: const Icon(Icons.settings),
-              onPressed: () => context.go('/settings'),
+              onPressed: () => context.push('/settings'),
             ),
             IconButton(
               icon: const Icon(Icons.logout),
