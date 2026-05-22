@@ -1,0 +1,30 @@
+A companion app for Firefly III that lets you execute pre-configured
+transactions directly from your Android home screen with a single tap.
+
+Firefly III is a self-hosted personal finance manager. Adding routine
+transactions still requires navigating menus, selecting accounts, and
+typing amounts. For transactions you repeat regularly, this friction adds up.
+
+Firefly Shortcuts lets you configure those transactions once and execute
+them with a single tap from an Android home screen widget. No navigation,
+no form-filling, no context switching.
+
+The home screen widget lists all your shortcuts. Each has a play button.
+Tap it and the transaction posts in the background. The button shows a
+simple state cycle: play while idle, hourglass while in progress, green
+check on success, gray X on failure.
+
+Features:
+- Create, edit, and delete transaction shortcuts
+- Each shortcut supports transaction type, amount, source and destination
+accounts, category, budget, bill, piggybank, tags, and description
+- Android home screen widget with per-shortcut execution buttons
+- Background transaction execution via WorkManager
+- Personal Access Token authentication
+- Sync with your Firefly III instance to fetch accounts and reference data
+
+Self-hosted only. No cloud backend, no analytics, no data collection.
+Communicates exclusively with your own Firefly III instance.
+
+Requires a running Firefly III instance (v6.x recommended) and a Personal
+Access Token generated under Profile > OAuth > Personal Access Tokens.
