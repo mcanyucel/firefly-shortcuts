@@ -60,6 +60,7 @@ dev_dependencies:
   drift_dev: ^2.33.0
   riverpod_generator: ^4.0.4-dev.1
   riverpod_lint: ^3.1.4-dev.3
+  flutter_launcher_icons: ^0.14.3
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
