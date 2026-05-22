@@ -1,0 +1,4 @@
+storePassword=YOUR_KEYSTORE_PASSWORD
+keyPassword=YOUR_KEY_PASSWORD
+keyAlias=firefly_shortcuts
+storeFile=C:\\path\\to\\firefly_shortcuts.jks

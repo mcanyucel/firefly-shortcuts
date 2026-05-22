@@ -1,50 +1,69 @@
-plugins {
-    id("com.android.application")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
-    id("dev.flutter.flutter-gradle-plugin")
-}
+  import java.util.Properties
+  import java.io.FileInputStream
 
-android {
-    namespace = "com.mustafacanyucel.firefly_shortcuts"
-    compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+  plugins {
+      id("com.android.application")
+      id("dev.flutter.flutter-gradle-plugin")
+  }
 
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
+  val keystoreProperties = Properties()
+  val keystorePropertiesFile = rootProject.file("key.properties")
+  if (keystorePropertiesFile.exists()) {
+      keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+  }
 
-    defaultConfig {
-        applicationId = "com.mustafacanyucel.firefly_shortcuts"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
-        manifestPlaceholders["appAuthRedirectScheme"] = "com.mustafacanyucel.firefly_shortcuts"
-    }
+  android {
+      namespace = "com.mustafacanyucel.firefly_shortcuts"
+      compileSdk = flutter.compileSdkVersion
+      ndkVersion = flutter.ndkVersion
 
-    buildTypes {
-        release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
-        }
-    }
-}
+      compileOptions {
+          sourceCompatibility = JavaVersion.VERSION_17
+          targetCompatibility = JavaVersion.VERSION_17
+      }
 
-dependencies {
+      signingConfigs {
+          create("release") {
+              keyAlias = keystoreProperties["keyAlias"] as String
+              keyPassword = keystoreProperties["keyPassword"] as String
+              storeFile = file(keystoreProperties["storeFile"] as String)
+              storePassword = keystoreProperties["storePassword"] as String
+          }
+      }
+
+      defaultConfig {
+          applicationId = "com.mustafacanyucel.firefly_shortcuts"
+          minSdk = flutter.minSdkVersion
+          targetSdk = flutter.targetSdkVersion
+          versionCode = flutter.versionCode
+          versionName = flutter.versionName
+          manifestPlaceholders["appAuthRedirectScheme"] = "com.mustafacanyucel.firefly_shortcuts"
+      }
+
+      buildTypes {
+          release {
+              signingConfig = signingConfigs.getByName("release")
+              isMinifyEnabled = false
+              isShrinkResources = false
+              proguardFiles(
+                  getDefaultProguardFile("proguard-android-optimize.txt"),
+                  "proguard-rules.pro"
+              )
+          }
+      }
+  }
+
+  dependencies {
       implementation("androidx.work:work-runtime-ktx:2.9.0")
       implementation("com.squareup.okhttp3:okhttp:4.12.0")
-}
+  }
 
-kotlin {
-    compilerOptions {
-        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
-    }
-}
+  kotlin {
+      compilerOptions {
+          jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
+      }
+  }
 
-flutter {
-    source = "../.."
-}
+  flutter {
+      source = "../.."
+  }
