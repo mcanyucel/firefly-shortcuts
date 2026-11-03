@@ -1,0 +1,149 @@
+# Roadmap
+
+Planned work, agreed in discussion on 2026-11-02. Nothing here is started yet.
+
+## Distribution
+
+- **F-Droid: dropped.** The fdroiddata PR was closed for inactivity while waiting on review. No further F-Droid work.
+- **Now:** release APKs on GitHub, installed directly or through Obtainium.
+- **Planned:** Google Play.
+
+### Before publishing on Google Play
+
+- New personal developer accounts must run a closed test with at least 12 testers for 14 days before going public. Start this early.
+- A privacy policy URL is required. With SMS access, it must say exactly what is read and that nothing leaves the device except the Firefly transaction itself.
+- Fill in the Data safety form.
+- **Signing (decided 2026-11-03):** keep the existing release key and upload it to Play App Signing as the app signing key (Play Console's "use existing key" option, exported with Google's PEPK tool).
+  - GitHub and Play builds then share one signature and the same application ID, so users can move between the two without uninstalling.
+  - Play also gets its own separate **upload key**. A lost upload key can be reset through Google; the app signing key can't be replaced, so keep its backup safe.
+  - Add Play's app signing certificate fingerprint to `assetlinks.json` if Play reports one that differs.
+
+## Step 0: Rewrite as a native Kotlin + Compose app
+
+Decided 2026-11-03. Both planned features are mostly native (popup activity, SMS receiver, notifications, background posting). The Flutter ↔ Android boundary already causes friction:
+- the shortcut list is copied into the widget's storage as JSON
+- the widget keeps its own token copy and cannot refresh it
+- everything goes through a MethodChannel
+
+A single Kotlin app removes all three.
+
+### Repository
+
+- During development, push the new project to a repo named `firefly-shortcuts-native`.
+- On release day:
+  1. Rename `mcanyucel/firefly-shortcuts` to `firefly-shortcuts-flutter` and archive it.
+  2. Rename `firefly-shortcuts-native` to `firefly-shortcuts`.
+
+  The URL Obtainium users follow then points at the native app. The old history stays in the archived repo.
+- Local folder for the new project: `C:\dev\firefly-shortcuts-native`.
+- Debug builds use the application ID suffix `.debug`, so they install next to the released app instead of clashing with its signature.
+
+### Upgrade path from 1.0.3
+
+- **Same application ID** (`com.mustafacanyucel.firefly_shortcuts`) and **same release key**, so 2.0.0 installs as an update. The OAuth App Link (assetlinks.json) keeps working because the key is unchanged.
+- **versionCode 5000** for 2.0.0. 1.0.2 and 1.0.3 used 51–63 (F-Droid scheme). Releases before that may have been built with Flutter's `--split-per-abi` scheme (abi × 1000 + build, up to about 4004). 5000 is above both.
+- **One universal APK.** No native libraries any more, so no ABI splits.
+- **minSdk 26** (needed for `java.time`; SETUP.md already says API 26+).
+- **Settings and tokens are not carried over.** flutter_secure_storage's format isn't worth decoding, so users enter the server URL and token once after updating.
+- **Local database:** open question 4.
+
+### Stack
+
+| Concern | Choice |
+|---|---|
+| UI | Jetpack Compose, Material 3 |
+| Theme | Generated with Material Theme Builder from seed `#673AB7` (the Flutter `deepPurple` seed). Dynamic color off. Dark theme now supported. |
+| State | ViewModel + StateFlow |
+| Dependency injection | Manual: one `AppContainer` owned by the `Application` class. Workers and the widget reach it through `applicationContext`. |
+| Database | Room (KSP), schemas exported to `app/schemas` |
+| HTTP | OkHttp + kotlinx.serialization (about 8 endpoints; Retrofit isn't worth it) |
+| OAuth | AppAuth for Android (the library flutter_appauth wrapped) |
+| Settings | DataStore (Preferences) |
+| Secrets | Android Keystore AES-GCM. Generalise the existing `WidgetToken` into one secret store. |
+| Navigation | Navigation Compose with type-safe routes |
+| Background work | WorkManager |
+| Home screen widget | RemoteViews as today, reading Room directly. Jetpack Glance is optional, later. |
+
+### Conversion steps
+
+1. **Project setup:** new project, Gradle, signing, icons, theme; an empty themed screen runs.
+2. **Database:** Room entities and DAOs matching the current schema.
+3. **Settings and secret storage.**
+4. **API client and DTOs.**
+5. **Auth:** PAT and OAuth, token refresh, data owner guard (wipe on server or user change).
+6. **Sync.**
+7. **Screens and navigation:** settings, home, sync, shortcut editor.
+8. **Widget and worker:** read Room and the shared auth directly. The JSON copy, the widget token copy and the MethodChannel go away. The worker can refresh OAuth tokens.
+9. **Upgrade from 1.0.3:** backup rules for the new file names; database import, if decided.
+10. **Release 2.0.0:** README and SETUP for the native build, repo switch.
+
+## Feature 1: Shortcuts that ask for the amount
+
+For expenses where everything except the amount is fixed (e.g. the nearby burger place).
+
+- A shortcut can be marked "ask for amount".
+- Tapping it on the widget opens a small popup over the home screen with the number keyboard up. Save posts the transaction in the background with the usual hourglass, then check or X.
+
+Implementation notes:
+
+- **Popup:** a small Compose activity with a dialog window theme, using the app theme.
+- **Widget taps:** All rows in a widget list share one tap action (`setPendingIntentTemplate`), currently a broadcast to `ShortcutExecuteReceiver`. Android blocks starting an activity from a background broadcast. So the template should point to a transparent activity:
+  - Fixed shortcuts: enqueue the work and close at once.
+  - "Ask" shortcuts: show the amount popup.
+- **Decimal comma:** Turkish keyboards produce `644,00`, but Firefly expects `644.00`. Convert it, and accept a thousands separator like `1.234,56`.
+- **Database:** add an "ask for amount" column to the shortcuts table (Room migration).
+- **Widget list:** show "?" or "Enter amount" in place of the amount.
+- **In-app run dialog** on the home screen: add an amount field for these shortcuts.
+- **Security:** the amount comes from the activity, which is not exported. Every other transaction field must still come only from the app's own database, never from the tapping intent.
+- **Duplicate check:** still works, because the amount and date are fixed once Save is pressed.
+
+## Feature 2: Transactions from bank SMS
+
+For fully random expenses. The card sends an SMS on every purchase, in a fixed format:
+
+```
+Degerli Musterimiz, 1279 ile biten World Platinum kartinizla 02.11.2026 saat 12:18'de,V A N T A is yerinden 644,00 TL islem yapilmistir. Islem size ait degilse bankamizla iletisime gecebilirsiniz. B002
+```
+
+### How to receive the SMS
+
+- **Use `RECEIVE_SMS` with a broadcast receiver declared in the manifest.** Android wakes the app when an SMS arrives, even when it's closed, so NFC payments (bank app in front, SMS seconds later) are no problem. No daily batch job and no `READ_SMS` are needed.
+- **Not the SMS User Consent API.** It only works if the app started listening within 5 minutes *before* the SMS arrives, and it needs the app in the foreground to show the "Allow" prompt.
+- **Privacy:** Android gives the app every incoming SMS. Drop anything that isn't from the bank's sender or doesn't match the pattern immediately, and store nothing from it.
+- **Backup option if Google Play rejects the SMS permission:** a notification listener that reads the SMS app's (or bank app's) notification. The user enables it once in Android settings. It technically sees every notification and depends on the full text being in the notification.
+
+### Two builds from one codebase
+
+| Build | SMS reading |
+|---|---|
+| GitHub / Obtainium | Included. On Android 15, a sideloaded install may need "Allow restricted settings" before the permission can be granted (to verify on a device). |
+| Google Play | Not in the first release. Needs a Permissions Declaration Form with "SMS-based money management" as the app's core function. Google reviews these by hand, and rejections happen. Add it in a later update once approved, or use the notification listener instead. |
+
+Gradle product flavors with a separate manifest for the SMS permission and receiver keep this to one codebase.
+
+### Processing a message
+
+1. **Filter:** match the sender and the pattern; ignore everything else.
+2. **Extract:** card ending (`1279`), date and time (`02.11.2026 12:18`), merchant (`V A N T A`), amount and currency (`644,00 TL`).
+3. **Map** the card ending to a Firefly source account (a new setting).
+4. **Use the SMS date and time as the transaction date**, so a retry is caught by Firefly's duplicate check.
+5. **Post it**, either automatically or after review (see open questions):
+   - **Automatic:** post as a withdrawal with the merchant as `destination_name`. Firefly's own rules set the category, budget and tags (e.g. "description contains VANTA → Food").
+   - **Review first:** show a notification ("644,00 TL at V A N T A"). Tapping it opens the Feature 1 popup already filled in, where you pick a shortcut to borrow the accounts, category and tags from. Optional merchant → shortcut rules let known places post automatically.
+
+Make the sender and pattern settings rather than hard-coded, with a "paste a sample SMS to test" box, so the feature works for other banks.
+
+## Open questions
+
+1. **Feature 2:** should parsed SMS post automatically, or always wait for confirmation?
+2. **Feature 2:** does the bank use different wording for refunds, foreign currency, or instalment ("taksit") purchases? Each needs its own pattern, or should be ignored deliberately.
+3. ~~**Play:** same application ID as the GitHub build, or a separate one?~~ **Same ID**, same key (see "Before publishing on Google Play").
+4. **Native rewrite:** on the first 2.0.0 launch, import shortcuts from the old Flutter database (`app_flutter/app_database.sqlite`, read with plain SQL, then deleted), or start fresh and re-create shortcuts by hand? An import is a one-off of moderate size; starting fresh costs nothing in code.
+
+## Order
+
+1. Step 0: native rewrite, released as 2.0.0.
+2. Start the Play closed test as early as possible.
+3. Feature 1. It is self-contained, and Feature 2's review flow reuses its popup.
+4. Feature 2, GitHub build first.
+5. Feature 2 on Play, after the declaration is approved.

@@ -1,0 +1,11 @@
+* text=auto eol=lf
+
+# cmd.exe can misread batch files with LF endings
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+*.jar binary
+*.png binary
+*.webp binary
+*.jks binary
+*.keystore binary
