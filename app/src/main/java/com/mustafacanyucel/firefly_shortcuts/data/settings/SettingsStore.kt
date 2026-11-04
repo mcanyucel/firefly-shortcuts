@@ -1,4 +1,4 @@
-package com.mustafacanyucel.firefly_shortcuts.data.secrets
+package com.mustafacanyucel.firefly_shortcuts.data.settings
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.MutablePreferences
@@ -14,7 +14,7 @@ import java.time.Instant
 data class Settings(
     val serverUrl: String? = null,
     val clientId: String? = null,
-    val redirectUrl: String? = null,
+    val redirectUrl: String = SettingsStore.DEFAULT_REDIRECT_URL,
     val lastSync: Instant? = null,
 )
 
@@ -29,7 +29,7 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
         Settings(
             serverUrl = prefs[SERVER_URL],
             clientId = prefs[CLIENT_ID],
-            redirectUrl = prefs[REDIRECT_URL],
+            redirectUrl = prefs[REDIRECT_URL] ?: DEFAULT_REDIRECT_URL,
             lastSync = prefs[LAST_SYNC]?.let(Instant::ofEpochMilli),
         )
     }
@@ -63,6 +63,9 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
     }
 
     companion object {
+        const val DEFAULT_REDIRECT_URL =
+            "https://fireflyiiishortcuts.mustafacanyucel.com/oauth2redirect.html"
+
         fun normalizeServerUrl(url: String): String = url.trim().trimEnd('/')
 
         private val SERVER_URL = stringPreferencesKey("server_url")

@@ -4,10 +4,13 @@ import android.content.Context
 import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.preferencesDataStore
+import com.mustafacanyucel.firefly_shortcuts.auth.AuthManager
+import com.mustafacanyucel.firefly_shortcuts.auth.DataOwnerGuard
+import com.mustafacanyucel.firefly_shortcuts.data.api.FireflyApi
 import com.mustafacanyucel.firefly_shortcuts.data.db.AppDatabase
 import com.mustafacanyucel.firefly_shortcuts.data.secrets.KeystoreCipher
 import com.mustafacanyucel.firefly_shortcuts.data.secrets.SecretStore
-import com.mustafacanyucel.firefly_shortcuts.data.secrets.SettingsStore
+import com.mustafacanyucel.firefly_shortcuts.data.settings.SettingsStore
 
 private val Context.settingsDataStore by preferencesDataStore(
     name = "settings",
@@ -28,4 +31,15 @@ class AppContainer(context: Context) {
     val database: AppDatabase by lazy { AppDatabase.create(appContext) }
     val settings: SettingsStore by lazy { SettingsStore(appContext.settingsDataStore) }
     val secrets: SecretStore by lazy { SecretStore(appContext.secretsDataStore, KeystoreCipher("secrets")) }
+
+    /**
+     * api and auth may look like they have circular dependency, but actually api only needs the
+     * definition of the [auth.accessToken()] as lambda, not the actual instance.
+     */
+    val api: FireflyApi by lazy { FireflyApi (
+        FireflyApi.httpClient(),
+        serverUrl = { settings.current().serverUrl },
+        accessToken = { auth.accessToken() }
+    )}
+    val auth: AuthManager by lazy { AuthManager (appContext, settings, secrets, DataOwnerGuard(api, settings, database))}
 }

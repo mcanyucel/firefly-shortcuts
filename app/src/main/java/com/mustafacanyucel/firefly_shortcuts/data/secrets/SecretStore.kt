@@ -9,7 +9,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 
 enum class Secret {
-    PERSONAL_ACCESS_TOKEN,
     ACCESS_TOKEN,
     REFRESH_TOKEN,
     TOKEN_EXPIRY;
