@@ -11,6 +11,7 @@ import com.mustafacanyucel.firefly_shortcuts.data.db.AppDatabase
 import com.mustafacanyucel.firefly_shortcuts.data.secrets.KeystoreCipher
 import com.mustafacanyucel.firefly_shortcuts.data.secrets.SecretStore
 import com.mustafacanyucel.firefly_shortcuts.data.settings.SettingsStore
+import com.mustafacanyucel.firefly_shortcuts.sync.SyncManager
 
 private val Context.settingsDataStore by preferencesDataStore(
     name = "settings",
@@ -42,4 +43,5 @@ class AppContainer(context: Context) {
         accessToken = { auth.accessToken() }
     )}
     val auth: AuthManager by lazy { AuthManager (appContext, settings, secrets, DataOwnerGuard(api, settings, database))}
+    val sync: SyncManager by lazy { SyncManager(api, database, settings) }
 }
