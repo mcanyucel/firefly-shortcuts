@@ -13,6 +13,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.mustafacanyucel.firefly_shortcuts.AppContainer
 import com.mustafacanyucel.firefly_shortcuts.appContainer
+import com.mustafacanyucel.firefly_shortcuts.ui.sync.SyncScreen
 import com.mustafacanyucel.firefly_shortcuts.ui.home.HomeScreen
 import com.mustafacanyucel.firefly_shortcuts.ui.settings.SettingsScreen
 
@@ -23,6 +24,9 @@ data object HomeRoute
 
 @Serializable
 data object SettingsRoute
+
+@Serializable
+data object SyncRoute
 
 @Composable
 fun AppNavHost() {
@@ -50,7 +54,13 @@ fun AppNavHost() {
 
     NavHost(navController = navController, startDestination = startRoute) {
         composable<HomeRoute> {
-            HomeScreen(onOpenSettings = { navController.navigate(SettingsRoute) })
+            HomeScreen(
+                onOpenSettings = { navController.navigate(SettingsRoute) },
+                onOpenSync = { navController.navigate(SyncRoute) },
+            )
+        }
+        composable<SyncRoute> {
+            SyncScreen(onBack = { navController.popBackStack() })
         }
         composable<SettingsRoute> {
             val canGoBack = remember { navController.previousBackStackEntry != null }

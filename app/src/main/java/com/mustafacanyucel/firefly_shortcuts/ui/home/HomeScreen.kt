@@ -17,12 +17,15 @@ import com.mustafacanyucel.firefly_shortcuts.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(onOpenSettings: () -> Unit) {
+fun HomeScreen(onOpenSettings: () -> Unit,  onOpenSync: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Firefly Shortcuts") },
                 actions = {
+                    IconButton(onClick = onOpenSync) {
+                        Icon(painterResource(R.drawable.ic_sync), contentDescription = "Sync")
+                    }
                     IconButton(onClick = onOpenSettings) {
                         Icon(painterResource(R.drawable.ic_settings), contentDescription = "Settings")
                     }

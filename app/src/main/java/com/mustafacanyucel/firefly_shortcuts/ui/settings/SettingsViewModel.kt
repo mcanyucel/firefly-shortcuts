@@ -145,6 +145,11 @@ class SettingsViewModel(private val container: AppContainer): ViewModel() {
 
     private suspend fun connected(result: LoginResult) {
         token = ""
+        // Nothing synced yet (first sign-in, or the old data was wiped): there
+        // would be no accounts to build a shortcut from.
+        if (container.settings.current().lastSync == null) {
+            container.appScope.launch { container.sync.syncAll() }
+        }
         _events.send(SettingsEvent.Connected(dataCleared = result == LoginResult.CONNECTED_DATA_CLEARED))
     }
 

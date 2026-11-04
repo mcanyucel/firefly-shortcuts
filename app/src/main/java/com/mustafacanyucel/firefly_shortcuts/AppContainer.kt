@@ -12,6 +12,9 @@ import com.mustafacanyucel.firefly_shortcuts.data.secrets.KeystoreCipher
 import com.mustafacanyucel.firefly_shortcuts.data.secrets.SecretStore
 import com.mustafacanyucel.firefly_shortcuts.data.settings.SettingsStore
 import com.mustafacanyucel.firefly_shortcuts.sync.SyncManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 
 private val Context.settingsDataStore by preferencesDataStore(
     name = "settings",
@@ -44,4 +47,6 @@ class AppContainer(context: Context) {
     )}
     val auth: AuthManager by lazy { AuthManager (appContext, settings, secrets, DataOwnerGuard(api, settings, database))}
     val sync: SyncManager by lazy { SyncManager(api, database, settings) }
+    /** For work that must outlive the screen that started it, like a sync. */
+    val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 }
