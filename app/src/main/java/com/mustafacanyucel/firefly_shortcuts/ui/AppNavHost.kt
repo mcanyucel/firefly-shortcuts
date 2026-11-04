@@ -11,8 +11,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import com.mustafacanyucel.firefly_shortcuts.AppContainer
 import com.mustafacanyucel.firefly_shortcuts.appContainer
+import com.mustafacanyucel.firefly_shortcuts.ui.editor.EditorScreen
 import com.mustafacanyucel.firefly_shortcuts.ui.sync.SyncScreen
 import com.mustafacanyucel.firefly_shortcuts.ui.home.HomeScreen
 import com.mustafacanyucel.firefly_shortcuts.ui.settings.SettingsScreen
@@ -27,6 +29,9 @@ data object SettingsRoute
 
 @Serializable
 data object SyncRoute
+
+@Serializable
+data class EditorRoute(val id: Long = 0)
 
 @Composable
 fun AppNavHost() {
@@ -57,6 +62,7 @@ fun AppNavHost() {
             HomeScreen(
                 onOpenSettings = { navController.navigate(SettingsRoute) },
                 onOpenSync = { navController.navigate(SyncRoute) },
+                onAddShortcut = { navController.navigate(EditorRoute()) },
             )
         }
         composable<SyncRoute> {
@@ -76,6 +82,12 @@ fun AppNavHost() {
                         }
                     }
                 },
+            )
+        }
+        composable<EditorRoute> { entry ->
+            EditorScreen(
+                shortcutId = entry.toRoute<EditorRoute>().id,
+                onDone = { navController.popBackStack<EditorRoute>(inclusive = true) },
             )
         }
     }
