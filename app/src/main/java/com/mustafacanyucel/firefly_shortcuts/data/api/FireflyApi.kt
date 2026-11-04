@@ -19,6 +19,10 @@ class ApiException(val code: Int, val body: String): Exception("HTTP $code") {
     val isTransient: Boolean get() = code == 408 || code == 429 || code >= 500
 }
 
+/** The server answered, but not like a Firefly III API. */
+class NotFireflyException(code: Int) :
+    Exception("There's no Firefly III API at this address (HTTP $code)")
+
 class FireflyApi(
     private val client: OkHttpClient,
     private val serverUrl: suspend () -> String?,
@@ -31,6 +35,18 @@ class FireflyApi(
     suspend fun getCategories() = getAllPages<NamedAttributes>("categories")
     suspend fun getPiggyBanks() = getAllPages<NamedAttributes>("piggy-banks")
     suspend fun getTags() = getAllPages<TagAttributes>("tags")
+
+    /**
+     * Throws unless the server URL points at a Firefly III API. Used before
+     * opening the sign-in page; without a token, the API answers 401.
+     */
+    suspend fun checkServer() {
+        try {
+            send(newRequest("about"))
+        } catch (e: ApiException) {
+            if (!e.isUnauthorized) throw NotFireflyException(e.code)
+        }
+    }
 
     /**
      * ID of the user the access token belongs to.

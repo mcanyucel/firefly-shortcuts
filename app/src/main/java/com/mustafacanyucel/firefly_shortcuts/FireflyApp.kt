@@ -7,5 +7,5 @@ class FireflyApp : Application() {
     val container: AppContainer by lazy { AppContainer(this) }
 }
 
-val Context.appContext: AppContainer
+val Context.appContainer: AppContainer
     get() = (applicationContext as FireflyApp).container

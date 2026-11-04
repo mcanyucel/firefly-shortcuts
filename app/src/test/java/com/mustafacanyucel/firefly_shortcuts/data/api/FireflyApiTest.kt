@@ -68,6 +68,22 @@ class FireflyApiTest {
         assertTrue(e.isUnauthorized)
     }
 
+    @Test
+    fun checkServerAcceptsUnauthorizedFirefly() = runBlocking {
+        server.enqueue(MockResponse.Builder().code(401).body("""{"message":"Unauthenticated."}""").build())
+
+        api.checkServer()
+
+        assertEquals("/api/v1/about", server.takeRequest().url.encodedPath)
+    }
+
+    @Test
+    fun checkServerRejectsOtherSites() {
+        server.enqueue(MockResponse.Builder().code(404).body("<html>Not found</html>").build())
+
+        assertThrows(NotFireflyException::class.java) { runBlocking { api.checkServer() } }
+    }
+
     private fun page(item: String, current: Int, total: Int) = MockResponse.Builder()
         .body("""{"data":[$item],"meta":{"pagination":{"current_page":$current,"total_pages":$total}}}""")
         .build()
