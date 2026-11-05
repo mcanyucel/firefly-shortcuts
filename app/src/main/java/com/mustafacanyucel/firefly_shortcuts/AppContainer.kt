@@ -28,6 +28,9 @@ private val Context.secretsDataStore by preferencesDataStore(
     corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() }
 )
 
+/** The native app's only Keystore key. The 1.0.3 cleanup keeps it. */
+const val SECRETS_KEY_ALIAS = "secrets"
+
 /**
  * The app's singletons. Activities, workers, and the widget reach it through [AppContainer].
  */
@@ -36,7 +39,7 @@ class AppContainer(context: Context) {
 
     val database: AppDatabase by lazy { AppDatabase.create(appContext) }
     val settings: SettingsStore by lazy { SettingsStore(appContext.settingsDataStore) }
-    val secrets: SecretStore by lazy { SecretStore(appContext.secretsDataStore, KeystoreCipher("secrets")) }
+    val secrets: SecretStore by lazy { SecretStore(appContext.secretsDataStore, KeystoreCipher(SECRETS_KEY_ALIAS)) }
 
     /**
      * api and auth may look like they have circular dependency, but actually api only needs the
