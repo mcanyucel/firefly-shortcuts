@@ -1,4 +1,5 @@
 package com.mustafacanyucel.firefly_shortcuts.data.db
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -83,7 +84,8 @@ data class TagEntity(@PrimaryKey val id: String, val name: String)
 data class ShortcutEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val name: String,
-    // Kept as text so the decimal is sent to Firefly exactly as typed.
+    // Kept as text so the decimal is sent to Firefly exactly as typed. When [askAmount] is
+    // true, this is only a suggestion for the amount prompt, and may be empty.
     val amount: String,
     val fromAccountId: String,
     val toAccountId: String,
@@ -96,6 +98,8 @@ data class ShortcutEntity(
     // Epoch milliseconds.
     val lastUsed: Long? = null,
     val transactionType: TransactionType,
+    // Ask for the amount every time the shortcut runs.
+    @ColumnInfo(defaultValue = "0") val askAmount: Boolean = false,
 )
 
 @Entity(

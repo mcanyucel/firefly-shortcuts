@@ -34,8 +34,8 @@ android {
         applicationId = "com.mustafacanyucel.firefly_shortcuts"
         minSdk = 26
         targetSdk = 37
-        versionCode = 5000
-        versionName = "2.0.0"
+        versionCode = 5001
+        versionName = "2.1.0"
         manifestPlaceholders["appAuthRedirectScheme"] = "com.mustafacanyucel.firefly_shortcuts"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

@@ -100,7 +100,7 @@ object ShortcutWidget {
             setOnClickPendingIntent(R.id.widget_sign_in, openApp)
             setViewVisibility(R.id.widget_sign_in, if (content.needsSignIn) View.VISIBLE else View.GONE)
             setEmptyView(R.id.widget_list, R.id.widget_empty)
-            setPendingIntentTemplate(R.id.widget_list, ShortcutRunReceiver.template(context))
+            setPendingIntentTemplate(R.id.widget_list, WidgetTapActivity.template(context))
             RemoteViewsCompat.setRemoteAdapter(context, this, widgetId, R.id.widget_list, items)
         }
     }
@@ -112,6 +112,6 @@ object ShortcutWidget {
             setImageViewResource(R.id.widget_execute_button, state.icon)
             setContentDescription(R.id.widget_execute_button, context.getString(state.label))
             // Only the id travels with the tap; the worker reads the rest from the database.
-            setOnClickFillInIntent(R.id.widget_execute_button, ShortcutRunReceiver.fillIn(row.id))
+            setOnClickFillInIntent(R.id.widget_execute_button, WidgetTapActivity.fillIn(row.id))
         }
 }

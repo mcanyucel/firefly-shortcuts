@@ -38,12 +38,13 @@ data class TransactionSplit(
 fun transactionDate(time: OffsetDateTime = OffsetDateTime.now()): String =
     time.truncatedTo(ChronoUnit.SECONDS).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
 
-fun ShortcutDetail.toTransactionRequest(date: String) = TransactionRequest(
+/** [amount] defaults to the shortcut's own; shortcuts that ask for it pass the typed one. */
+fun ShortcutDetail.toTransactionRequest(date: String, amount: String = shortcut.amount) = TransactionRequest(
     transactions = listOf(
         TransactionSplit(
             type = shortcut.transactionType.apiValue,
             date = date,
-            amount = shortcut.amount,
+            amount = amount,
             description = shortcut.description?.ifBlank { null } ?: shortcut.name,
             sourceId = fromAccount.id,
             sourceName = fromAccount.name,

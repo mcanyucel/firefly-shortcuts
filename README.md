@@ -27,6 +27,8 @@ The widget lists your shortcuts. Each row has a play button; tap it and the tran
 
 You can also run a shortcut from the app's home screen: tap it, check the summary and confirm.
 
+For places where only the amount changes, like a favourite burger place, a shortcut can **ask for the amount**. Tapping it on the widget opens a small prompt over the home screen with the number keyboard up; type the amount, tap Save, and it's posted like any other shortcut.
+
 ## Screenshots
 
 ### The app
@@ -111,6 +113,8 @@ Tap **+** on the home screen. Required fields:
 
 Everything else is optional: category, budget, bill, piggy bank, tags, description and an emoji icon. If the description is empty, the shortcut's name is sent as the description.
 
+Turn on **Ask for the amount each time** for a shortcut whose amount changes. The amount field then becomes an optional suggestion that's filled in when the prompt opens. Both `12.50` and `12,50` work, as does a thousands separator like `1.234,56`.
+
 To edit or delete a shortcut, use the ⋮ menu on its row. Deleting a shortcut only removes it from your phone; Firefly III isn't affected. If a shortcut uses an account that has since been deactivated or deleted in Firefly III, the app marks it with a warning.
 
 ### 4. Add the widget
@@ -120,6 +124,7 @@ Long-press an empty area of your home screen, choose **Widgets**, find **Firefly
 ## Widget behavior
 
 - Each tap is sent in the background with Android's WorkManager, so it finishes even if you leave the home screen.
+- Shortcuts that ask for the amount show `?` instead of an amount. Tapping ▶ opens the amount prompt; tap outside it or Cancel to close it without posting anything.
 - If the request fails because of the network or a server error, it is tried twice more before the button shows the failure. Every attempt sends the same transaction, and Firefly III rejects it if it already exists, so a retry never creates a second transaction.
 - If the button stays on the hourglass for more than five minutes, the next tap starts over.
 - If the widget shows **Sign-in needed**, you aren't connected, or your personal access token has expired. Tap the message to open the app.

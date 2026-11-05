@@ -1,6 +1,7 @@
 package com.mustafacanyucel.firefly_shortcuts.data.db
 
 import android.content.Context
+import androidx.room.AutoMigration
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
@@ -17,7 +18,10 @@ import androidx.room.TypeConverters
         ShortcutEntity::class,
         ShortcutTagEntity::class,
     ],
-    version = 1,
+    version = 2,
+    autoMigrations = [
+        AutoMigration(from = 1, to = 2), // shortcuts.askAmount
+    ],
 )
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {

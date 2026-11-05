@@ -59,7 +59,8 @@ class HomeViewModel(private val container: AppContainer) : ViewModel() {
         confirmDelete = null
     }
 
-    fun run() {
+    /** [amount] is the typed amount, for a shortcut that asks for one. */
+    fun run(amount: String? = null) {
         val item = confirmRun ?: return
         confirmRun = null
         val id = item.shortcut.id
@@ -70,7 +71,7 @@ class HomeViewModel(private val container: AppContainer) : ViewModel() {
         // threads by itself.
         container.appScope.launch(Dispatchers.Main) {
             val message = try {
-                container.runner.run(item)
+                container.runner.run(item, amount = amount)
                 UiMessage("Created \"${item.shortcut.name}\"", MessageKind.SUCCESS)
             } catch (e: CancellationException) {
                 throw e

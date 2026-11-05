@@ -52,14 +52,23 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <!-- Redraw after an app update, so placed widgets get the current tap action. -->
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/shortcut_widget_info" />
         </receiver>
-        <receiver
-            android:name=".widget.ShortcutRunReceiver"
-            android:exported="false" />
+        <!-- Widget taps. Not exported: only the widget's PendingIntent opens it.
+             Its own task (empty affinity), so the app's screens don't come up with it. -->
+        <activity
+            android:name=".widget.WidgetTapActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@style/Theme.FireflyShortcuts.Popup"
+            android:windowSoftInputMode="stateVisible|adjustResize" />
     </application>
 
 </manifest>

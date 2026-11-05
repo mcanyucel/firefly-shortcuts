@@ -3,12 +3,14 @@ package com.mustafacanyucel.firefly_shortcuts.ui.editor
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -22,15 +24,18 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -38,6 +43,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mustafacanyucel.firefly_shortcuts.R
 import com.mustafacanyucel.firefly_shortcuts.appContainer
 import com.mustafacanyucel.firefly_shortcuts.model.TransactionType
+import com.mustafacanyucel.firefly_shortcuts.ui.AMOUNT_ERROR
 import com.mustafacanyucel.firefly_shortcuts.ui.label
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -95,12 +101,35 @@ fun EditorScreen(shortcutId: Long, onDone: () -> Unit) {
                 }
             }
 
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .toggleable(value = vm.askAmount, role = Role.Switch, onValueChange = { vm.askAmount = it }),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text("Ask for the amount each time", style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        "Running it opens a prompt to type the amount",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                // The row handles the tap, so the whole line toggles it.
+                Switch(checked = vm.askAmount, onCheckedChange = null)
+            }
+
             OutlinedTextField(
                 value = vm.amount,
                 onValueChange = { vm.amount = it },
-                label = { Text("Amount") },
+                label = { Text(if (vm.askAmount) "Suggested amount (optional)" else "Amount") },
                 isError = vm.amountError,
-                supportingText = if (vm.amountError) { { Text("Enter an amount above zero, like 12.50") } } else null,
+                supportingText = when {
+                    vm.amountError -> { { Text(AMOUNT_ERROR) } }
+                    vm.askAmount -> { { Text("Filled in when the prompt opens") } }
+                    else -> null
+                },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 modifier = Modifier.fillMaxWidth(),

@@ -80,6 +80,8 @@ A single Kotlin app removes all three.
 
 ## Feature 1: Shortcuts that ask for the amount
 
+**Status (2026-11-05):** implemented on branch `feat/ask-amount`. Widget taps go to the non-exported `widget/WidgetTapActivity` (fixed shortcuts start and close at once; "ask" shortcuts show the prompt); `ShortcutRunReceiver` is gone. Database version 2 adds `shortcuts.askAmount` with an automatic migration (checked on an emulator: v1 data kept, identity hash matches). The saved amount is an optional suggestion for "ask" shortcuts, and a run never falls back to it. `ShortcutWidgetProvider` also redraws on `MY_PACKAGE_REPLACED`, so placed widgets pick up the new tap action after an update.
+
 For expenses where everything except the amount is fixed (e.g. the nearby burger place).
 
 - A shortcut can be marked "ask for amount".

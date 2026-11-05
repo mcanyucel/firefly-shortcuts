@@ -35,9 +35,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -50,11 +53,15 @@ import com.mustafacanyucel.firefly_shortcuts.R
 import com.mustafacanyucel.firefly_shortcuts.appContainer
 import com.mustafacanyucel.firefly_shortcuts.data.db.ShortcutDetail
 import com.mustafacanyucel.firefly_shortcuts.model.TransactionType
+import com.mustafacanyucel.firefly_shortcuts.model.normalizeAmount
+import com.mustafacanyucel.firefly_shortcuts.ui.AmountField
 import com.mustafacanyucel.firefly_shortcuts.ui.StatusSnackbarHost
 import com.mustafacanyucel.firefly_shortcuts.ui.amountText
 import com.mustafacanyucel.firefly_shortcuts.ui.color
+import com.mustafacanyucel.firefly_shortcuts.ui.currencyText
 import com.mustafacanyucel.firefly_shortcuts.ui.iconRes
 import com.mustafacanyucel.firefly_shortcuts.ui.label
+import com.mustafacanyucel.firefly_shortcuts.ui.rememberAmountState
 import com.mustafacanyucel.firefly_shortcuts.ui.show
 import kotlinx.coroutines.launch
 
@@ -129,18 +136,22 @@ fun HomeScreen(
     }
 
     vm.confirmRun?.let { item ->
-        AlertDialog(
-            onDismissRequest = vm::dismissDialog,
-            title = { Text("Run \"${item.shortcut.name}\"?") },
-            text = {
-                Text(
-                    "${item.shortcut.transactionType.label} · ${item.amountText}\n" +
-                            "${item.fromAccount.name} → ${item.toAccount.name}"
-                )
-            },
-            confirmButton = { TextButton(onClick = vm::run) { Text("Run") } },
-            dismissButton = { TextButton(onClick = vm::dismissDialog) { Text("Cancel") } },
-        )
+        if (item.shortcut.askAmount) {
+            AskAmountDialog(item, onRun = vm::run, onDismiss = vm::dismissDialog)
+        } else {
+            AlertDialog(
+                onDismissRequest = vm::dismissDialog,
+                title = { Text("Run \"${item.shortcut.name}\"?") },
+                text = {
+                    Text(
+                        "${item.shortcut.transactionType.label} · ${item.amountText}\n" +
+                                "${item.fromAccount.name} → ${item.toAccount.name}"
+                    )
+                },
+                confirmButton = { TextButton(onClick = { vm.run() }) { Text("Run") } },
+                dismissButton = { TextButton(onClick = vm::dismissDialog) { Text("Cancel") } },
+            )
+        }
     }
 
     vm.confirmDelete?.let { item ->
@@ -157,6 +168,49 @@ fun HomeScreen(
             dismissButton = { TextButton(onClick = vm::dismissDialog) { Text("Cancel") } },
         )
     }
+}
+
+/** The run dialog for a shortcut that asks for the amount, with the keyboard up. */
+@Composable
+private fun AskAmountDialog(item: ShortcutDetail, onRun: (String) -> Unit, onDismiss: () -> Unit) {
+    var amount by rememberAmountState(item.shortcut.amount)
+    var showError by rememberSaveable { mutableStateOf(false) }
+    val focus = remember { FocusRequester() }
+    val run: () -> Unit = {
+        val normalized = normalizeAmount(amount.text)
+        if (normalized == null) {
+            showError = true
+        } else {
+            onRun(normalized)
+        }
+    }
+    LaunchedEffect(Unit) { focus.requestFocus() }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Run \"${item.shortcut.name}\"?") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Text(
+                    "${item.shortcut.transactionType.label}\n" +
+                            "${item.fromAccount.name} → ${item.toAccount.name}"
+                )
+                AmountField(
+                    value = amount,
+                    onValueChange = {
+                        amount = it
+                        showError = false
+                    },
+                    isError = showError,
+                    currency = item.currencyText,
+                    modifier = Modifier.focusRequester(focus),
+                    onDone = run,
+                )
+            }
+        },
+        confirmButton = { TextButton(onClick = run) { Text("Run") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
 }
 
 @Composable

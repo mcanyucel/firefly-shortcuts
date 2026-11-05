@@ -22,6 +22,8 @@ class EditorViewModel(
 
     var name by mutableStateOf("")
     var amount by mutableStateOf("")
+    /** When true, the amount is asked for at each run, and [amount] is an optional suggestion. */
+    var askAmount by mutableStateOf(false)
     var description by mutableStateOf("")
     var icon by mutableStateOf("")
     var type by mutableStateOf(TransactionType.WITHDRAWAL)
@@ -50,7 +52,7 @@ class EditorViewModel(
     // Errors only show after the first save attempt, not while typing.
     private var showErrors by mutableStateOf(false)
     val nameError get() = showErrors && name.isBlank()
-    val amountError get() = showErrors && normalizeAmount(amount) == null
+    val amountError get() = showErrors && !amountValid()
     val fromError get() = showErrors && fromId == null
     val toError get() = showErrors && toId == null
 
@@ -94,6 +96,7 @@ class EditorViewModel(
                 val s = detail.shortcut
                 name = s.name
                 amount = s.amount
+                askAmount = s.askAmount
                 description = s.description.orEmpty()
                 icon = s.icon.orEmpty()
                 type = s.transactionType
@@ -135,7 +138,7 @@ class EditorViewModel(
         val normalizedAmount = normalizeAmount(amount)
         val from = fromId
         val to = toId
-        if (name.isBlank() || normalizedAmount == null || from == null || to == null) {
+        if (name.isBlank() || !amountValid() || from == null || to == null) {
             showErrors = true
             return
         }
@@ -146,7 +149,8 @@ class EditorViewModel(
                 val shortcut = ShortcutEntity(
                     id = shortcutId,
                     name = name.trim(),
-                    amount = normalizedAmount,
+                    // Empty only for a shortcut that asks for the amount and has no suggestion.
+                    amount = normalizedAmount.orEmpty(),
                     fromAccountId = from,
                     toAccountId = to,
                     categoryId = categoryId,
@@ -157,6 +161,7 @@ class EditorViewModel(
                     description = description.trim().ifEmpty { null },
                     lastUsed = lastUsed,
                     transactionType = type,
+                    askAmount = askAmount,
                 )
                 container.database.shortcutDao().save(shortcut, tagIds.toList())
                 finished = true
@@ -169,6 +174,10 @@ class EditorViewModel(
             }
         }
     }
+
+    /** Required for a fixed amount; for one that's asked for, only checked if filled in. */
+    private fun amountValid(): Boolean =
+        normalizeAmount(amount) != null || (askAmount && amount.isBlank())
 
     private fun accountType(id: String?) = accounts.find { it.id == id }?.accountType
 
