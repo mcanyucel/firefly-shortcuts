@@ -66,7 +66,7 @@ object ShortcutWidget {
                 val container = context.appContainer
                 // Read inside the lock, so the last redraw always has the latest data.
                 val content = content(container.database.shortcutDao().getAll(), container.auth.load())
-                for (id in ids) manager.updateAppWidget(id, views(context, id, content))
+                for (id in ids) manager.updateAppWidget(id, views(context, id, content, container.runStates))
             }
         } catch (e: CancellationException) {
             throw e
@@ -87,27 +87,31 @@ object ShortcutWidget {
         needsSignIn = auth.needsSignIn(),
     )
 
-    private fun views(context: Context, widgetId: Int, content: Content): RemoteViews {
+    private fun views(context: Context, widgetId: Int, content: Content, runStates: RunStateStore): RemoteViews {
         val openApp = PendingIntent.getActivity(
             context, 0, Intent(context, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE,
         )
         val items = RemoteViewsCompat.RemoteCollectionItems.Builder()
             .setHasStableIds(true)
-            .apply { content.rows.forEach { addItem(it.id, row(context, it)) } }
+            .apply { content.rows.forEach { addItem(it.id, row(context, it, runStates.get(it.id))) } }
             .build()
         return RemoteViews(context.packageName, R.layout.shortcut_widget).apply {
             setOnClickPendingIntent(R.id.widget_title, openApp)
             setOnClickPendingIntent(R.id.widget_sign_in, openApp)
             setViewVisibility(R.id.widget_sign_in, if (content.needsSignIn) View.VISIBLE else View.GONE)
             setEmptyView(R.id.widget_list, R.id.widget_empty)
+            setPendingIntentTemplate(R.id.widget_list, ShortcutRunReceiver.template(context))
             RemoteViewsCompat.setRemoteAdapter(context, this, widgetId, R.id.widget_list, items)
         }
     }
 
-    private fun row(context: Context, row: Row) =
+    private fun row(context: Context, row: Row, state: RunState) =
         RemoteViews(context.packageName, R.layout.shortcut_widget_item).apply {
             setTextViewText(R.id.widget_shortcut_name, row.title)
             setTextViewText(R.id.widget_shortcut_detail, row.detail)
-            setImageViewResource(R.id.widget_execute_button, R.drawable.ic_widget_play)
+            setImageViewResource(R.id.widget_execute_button, state.icon)
+            setContentDescription(R.id.widget_execute_button, context.getString(state.label))
+            // Only the id travels with the tap; the worker reads the rest from the database.
+            setOnClickFillInIntent(R.id.widget_execute_button, ShortcutRunReceiver.fillIn(row.id))
         }
 }

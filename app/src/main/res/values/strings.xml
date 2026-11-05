@@ -1,4 +1,8 @@
 <resources>
     <string name="app_name">Firefly Shortcuts</string>
     <string name="widget_description">Run your Firefly shortcuts from the home screen</string>
+    <string name="widget_run">Run</string>
+    <string name="widget_running">Running</string>
+    <string name="widget_run_succeeded">Transaction created</string>
+    <string name="widget_run_failed">Run failed</string>
 </resources>
