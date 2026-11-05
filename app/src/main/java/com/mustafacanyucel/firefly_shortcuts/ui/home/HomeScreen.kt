@@ -51,6 +51,7 @@ import com.mustafacanyucel.firefly_shortcuts.appContainer
 import com.mustafacanyucel.firefly_shortcuts.data.db.ShortcutDetail
 import com.mustafacanyucel.firefly_shortcuts.model.TransactionType
 import com.mustafacanyucel.firefly_shortcuts.ui.StatusSnackbarHost
+import com.mustafacanyucel.firefly_shortcuts.ui.amountText
 import com.mustafacanyucel.firefly_shortcuts.ui.color
 import com.mustafacanyucel.firefly_shortcuts.ui.iconRes
 import com.mustafacanyucel.firefly_shortcuts.ui.label
@@ -133,7 +134,7 @@ fun HomeScreen(
             title = { Text("Run \"${item.shortcut.name}\"?") },
             text = {
                 Text(
-                    "${item.shortcut.transactionType.label} · ${amountText(item)}\n" +
+                    "${item.shortcut.transactionType.label} · ${item.amountText}\n" +
                             "${item.fromAccount.name} → ${item.toAccount.name}"
                 )
             },
@@ -211,7 +212,7 @@ private fun ShortcutCard(
                 )
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     TypeBadge(s.transactionType)
-                    Text(amountText(item), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                    Text(item.amountText, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
                 }
                 if (inactiveAccount) {
                     Text(
@@ -250,11 +251,4 @@ private fun TypeBadge(type: TransactionType) {
     Surface(color = color.copy(alpha = 0.12f), contentColor = color, shape = MaterialTheme.shapes.extraSmall) {
         Text(type.label, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
     }
-}
-
-/** The amount with the currency of whichever account has one. */
-private fun amountText(item: ShortcutDetail): String {
-    val currency = listOf(item.fromAccount, item.toAccount)
-        .firstNotNullOfOrNull { it.currencySymbol ?: it.currencyCode }
-    return if (currency == null) item.shortcut.amount else "${item.shortcut.amount} $currency"
 }

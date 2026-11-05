@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Firefly Shortcuts</string>
+    <string name="widget_description">Run your Firefly shortcuts from the home screen</string>
 </resources>

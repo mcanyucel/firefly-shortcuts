@@ -85,6 +85,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.okhttp)
     implementation(libs.appauth)
+    implementation(libs.androidx.core.remoteviews)
     testImplementation(libs.junit)
     testImplementation(libs.mockwebserver)
     androidTestImplementation(platform(libs.androidx.compose.bom))

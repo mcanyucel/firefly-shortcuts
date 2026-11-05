@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- updatePeriodMillis: a daily redraw, so the sign-in banner shows once a
+     personal access token expires, even if the app isn't opened. -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="250dp"
+    android:minHeight="110dp"
+    android:resizeMode="horizontal|vertical"
+    android:widgetCategory="home_screen"
+    android:initialLayout="@layout/shortcut_widget"
+    android:description="@string/widget_description"
+    android:updatePeriodMillis="86400000" />

@@ -47,4 +47,16 @@ class AuthStateTest {
         assertNull(state.tokenExpiry)
         assertFalse(state.isExpired())
     }
+
+    @Test
+    fun needsSignInOnlyWhenRefreshCantHelp() {
+        val exp = Instant.ofEpochSecond(1893456000)
+        val pat = AuthState(accessToken = jwt("""{"exp":1893456000}"""))
+        val oauth = AuthState(accessToken = "a", refreshToken = "r", accessTokenExpiry = exp)
+
+        assertTrue(AuthState().needsSignIn())
+        assertTrue(pat.needsSignIn(now = exp))
+        assertFalse(pat.needsSignIn(now = exp.minusSeconds(3600)))
+        assertFalse(oauth.needsSignIn(now = exp))
+    }
 }

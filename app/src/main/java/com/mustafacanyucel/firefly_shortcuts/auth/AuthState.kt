@@ -26,6 +26,10 @@ data class AuthState(
     fun isExpired(now: Instant = Instant.now()): Boolean =
         tokenExpiry?.let { !now.isBefore(it.minus(EXPIRY_MARGIN))} ?: false
 
+    /** Only a new sign-in helps: signed out, or a personal access token that ran out. */
+    fun needsSignIn(now: Instant = Instant.now()): Boolean =
+        !isAuthenticated || (!isOAuth && isExpired(now))
+
     private companion object {
         val EXPIRY_MARGIN: Duration = Duration.ofMinutes(2)
     }
