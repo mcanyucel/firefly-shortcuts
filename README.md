@@ -59,7 +59,7 @@ Downloads your accounts and other lists from Firefly III, with a count for each.
 
 <p>
   <img src="docs/screenshots/widget_2.png" width="400" alt="The widget on the home screen">
-  <img src="docs/screenshots/widget_1.png" width="240" alt="Firefly Shortcuts in the launcher's widget list">
+  <img src="docs/screenshots/widget_1.png" width="400" alt="Firefly Shortcuts in the launcher's widget list">
 </p>
 
 The widget on the home screen, and where to find it in the widget list.
