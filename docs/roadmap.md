@@ -1,6 +1,6 @@
 # Roadmap
 
-Planned work, agreed in discussion on 2026-11-02. Nothing here is started yet.
+Planned work, agreed in discussion on 2026-11-02. Progress is noted in the Order section at the end.
 
 ## Distribution
 
@@ -80,7 +80,7 @@ A single Kotlin app removes all three.
 
 ## Feature 1: Shortcuts that ask for the amount
 
-**Status (2026-11-05):** implemented on branch `feat/ask-amount`. Widget taps go to the non-exported `widget/WidgetTapActivity` (fixed shortcuts start and close at once; "ask" shortcuts show the prompt); `ShortcutRunReceiver` is gone. Database version 2 adds `shortcuts.askAmount` with an automatic migration (checked on an emulator: v1 data kept, identity hash matches). The saved amount is an optional suggestion for "ask" shortcuts, and a run never falls back to it. `ShortcutWidgetProvider` also redraws on `MY_PACKAGE_REPLACED`, so placed widgets pick up the new tap action after an update.
+**Status (2026-11-05):** done, released as 2.1.0 (versionCode 5001). Widget taps go to the non-exported `widget/WidgetTapActivity` (fixed shortcuts start and close at once; "ask" shortcuts show the prompt); `ShortcutRunReceiver` is gone. Database version 2 adds `shortcuts.askAmount` with an automatic migration (checked on an emulator: v1 data kept, identity hash matches). The saved amount is an optional suggestion for "ask" shortcuts, and a run never falls back to it. `ShortcutWidgetProvider` also redraws on `MY_PACKAGE_REPLACED`, so placed widgets pick up the new tap action after an update.
 
 For expenses where everything except the amount is fixed (e.g. the nearby burger place).
 
@@ -145,8 +145,8 @@ Make the sender and pattern settings rather than hard-coded, with a "paste a sam
 
 ## Order
 
-1. Step 0: native rewrite, released as 2.0.0.
-2. Start the Play closed test as early as possible.
-3. Feature 1. It is self-contained, and Feature 2's review flow reuses its popup.
-4. Feature 2, GitHub build first.
+1. ~~Step 0: native rewrite, released as 2.0.0.~~ Done 2026-11-05.
+2. Start the Play closed test as early as possible. In progress: 2.0.0 sent for review on 2026-11-05; testers still to be recruited (12 for 14 days).
+3. ~~Feature 1. It is self-contained, and Feature 2's review flow reuses its popup.~~ Done 2026-11-05, released as 2.1.0.
+4. Feature 2, GitHub build first. **Next.** Answer open questions 1 and 2 first.
 5. Feature 2 on Play, after the declaration is approved.
