@@ -63,6 +63,7 @@ fun AppNavHost() {
                 onOpenSettings = { navController.navigate(SettingsRoute) },
                 onOpenSync = { navController.navigate(SyncRoute) },
                 onAddShortcut = { navController.navigate(EditorRoute()) },
+                onEditShortcut = { id -> navController.navigate(EditorRoute(id)) },
             )
         }
         composable<SyncRoute> {

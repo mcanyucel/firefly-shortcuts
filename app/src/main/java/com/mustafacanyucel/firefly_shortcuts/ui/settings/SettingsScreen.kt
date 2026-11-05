@@ -28,7 +28,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -51,6 +50,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mustafacanyucel.firefly_shortcuts.R
 import com.mustafacanyucel.firefly_shortcuts.appContainer
 import com.mustafacanyucel.firefly_shortcuts.auth.AuthState
+import com.mustafacanyucel.firefly_shortcuts.ui.StatusSnackbarHost
+import com.mustafacanyucel.firefly_shortcuts.ui.show
 import kotlinx.coroutines.launch
 import java.time.Duration
 import java.time.Instant
@@ -78,7 +79,7 @@ fun SettingsScreen(
         vm.events.collect { event ->
             when (event) {
                 is SettingsEvent.LaunchSignIn -> signInLauncher.launch(event.intent)
-                is SettingsEvent.Message -> launch { snackbar.showSnackbar(event.text) }
+                is SettingsEvent.Message -> launch { snackbar.show(event.message) }
                 is SettingsEvent.Connected -> {
                     if (event.dataCleared) {
                         Toast.makeText(
@@ -106,7 +107,7 @@ fun SettingsScreen(
                 },
             )
         },
-        snackbarHost = { SnackbarHost(snackbar) },
+        snackbarHost = { StatusSnackbarHost(snackbar) },
     ) { padding ->
         if (!vm.loaded) return@Scaffold
         Column(

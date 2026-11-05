@@ -11,6 +11,7 @@ import com.mustafacanyucel.firefly_shortcuts.data.db.AppDatabase
 import com.mustafacanyucel.firefly_shortcuts.data.secrets.KeystoreCipher
 import com.mustafacanyucel.firefly_shortcuts.data.secrets.SecretStore
 import com.mustafacanyucel.firefly_shortcuts.data.settings.SettingsStore
+import com.mustafacanyucel.firefly_shortcuts.run.ShortcutRunner
 import com.mustafacanyucel.firefly_shortcuts.sync.SyncManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -41,12 +42,13 @@ class AppContainer(context: Context) {
      * definition of the [auth.accessToken()] as lambda, not the actual instance.
      */
     val api: FireflyApi by lazy { FireflyApi (
-        FireflyApi.httpClient(),
+        FireflyApi.httpClient(appContext),
         serverUrl = { settings.current().serverUrl },
         accessToken = { auth.accessToken() }
     )}
     val auth: AuthManager by lazy { AuthManager (appContext, settings, secrets, DataOwnerGuard(api, settings, database))}
     val sync: SyncManager by lazy { SyncManager(api, database, settings) }
+    val runner: ShortcutRunner by lazy { ShortcutRunner(api, database.shortcutDao()) }
     /** For work that must outlive the screen that started it, like a sync. */
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 }

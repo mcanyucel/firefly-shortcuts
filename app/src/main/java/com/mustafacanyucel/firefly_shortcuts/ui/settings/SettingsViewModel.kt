@@ -9,18 +9,17 @@ import androidx.lifecycle.viewModelScope
 import com.mustafacanyucel.firefly_shortcuts.AppContainer
 import com.mustafacanyucel.firefly_shortcuts.auth.AuthState
 import com.mustafacanyucel.firefly_shortcuts.auth.LoginResult
-import com.mustafacanyucel.firefly_shortcuts.data.api.ApiException
 import com.mustafacanyucel.firefly_shortcuts.data.settings.SettingsStore
+import com.mustafacanyucel.firefly_shortcuts.ui.MessageKind
+import com.mustafacanyucel.firefly_shortcuts.ui.UiMessage
+import com.mustafacanyucel.firefly_shortcuts.ui.errorText
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
-import net.openid.appauth.AuthorizationException
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
-import java.io.IOException
-import java.net.UnknownHostException
 
 data class ServerSwitch(val shortcutCount: Int, val ownerServer: String, val newServer: String)
 
@@ -30,7 +29,7 @@ data class ServerSwitch(val shortcutCount: Int, val ownerServer: String, val new
 sealed interface SettingsEvent {
     data class LaunchSignIn(val intent: Intent): SettingsEvent
     data class Connected(val dataCleared: Boolean): SettingsEvent
-    data class Message(val text: String): SettingsEvent
+    data class Message(val message: UiMessage): SettingsEvent
 }
 
 class SettingsViewModel(private val container: AppContainer): ViewModel() {
@@ -105,7 +104,7 @@ class SettingsViewModel(private val container: AppContainer): ViewModel() {
         viewModelScope.launch {
             try {
                 val result = container.auth.completeOAuth(data)
-                if (result == LoginResult.CANCELLED) message("Sign-in cancelled") else connected(result)
+                if (result == LoginResult.CANCELLED) message("Sign-in cancelled", MessageKind.WARNING) else connected(result)
             } catch(e: CancellationException) {
                 throw e
             } catch(e: Exception) {
@@ -153,8 +152,8 @@ class SettingsViewModel(private val container: AppContainer): ViewModel() {
         _events.send(SettingsEvent.Connected(dataCleared = result == LoginResult.CONNECTED_DATA_CLEARED))
     }
 
-    private fun message(text: String) {
-        _events.trySend(SettingsEvent.Message(text))
+    private fun message(text: String, kind: MessageKind = MessageKind.ERROR) {
+        _events.trySend(SettingsEvent.Message(UiMessage(text, kind)))
     }
 
     /**
@@ -178,13 +177,4 @@ class SettingsViewModel(private val container: AppContainer): ViewModel() {
         }
         return null
     }
-}
-
-private fun errorText(e: Exception): String = when (e) {
-    is ApiException ->
-        if (e.isUnauthorized) "Firefly rejected the token" else "Firefly answered with error ${e.code}"
-    is AuthorizationException -> e.errorDescription ?: e.error ?: "Sign-in failed"
-    is UnknownHostException -> "There's no server at this address"
-    is IOException -> "Can't reach the server (${e.message})"
-    else -> e.message ?: e.toString()
 }

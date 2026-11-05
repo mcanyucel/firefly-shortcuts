@@ -1,5 +1,7 @@
 package com.mustafacanyucel.firefly_shortcuts.data.api
 
+import android.content.Context
+import android.net.ConnectivityManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -7,6 +9,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 /**
@@ -22,6 +25,9 @@ class ApiException(val code: Int, val body: String): Exception("HTTP $code") {
 /** The server answered, but not like a Firefly III API. */
 class NotFireflyException(code: Int) :
     Exception("There's no Firefly III API at this address (HTTP $code)")
+
+/** The phone has no network at all, so nothing was sent. */
+class OfflineException : IOException("No internet connection")
 
 class FireflyApi(
     private val client: OkHttpClient,
@@ -109,11 +115,20 @@ class FireflyApi(
             encodeDefaults = true
         }
 
-        fun httpClient(): OkHttpClient = OkHttpClient.Builder()
-            .connectTimeout(15, TimeUnit.SECONDS)
-            .writeTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
-            .build()
+        fun httpClient(context: Context): OkHttpClient {
+            val connectivity = context.getSystemService(ConnectivityManager::class.java)
+            return OkHttpClient.Builder()
+                .addInterceptor { chain ->
+                    // Without this, airplane mode fails at the DNS lookup, which
+                    // looks the same as a mistyped server address.
+                    if (connectivity.activeNetwork == null) throw OfflineException()
+                    chain.proceed(chain.request())
+                }
+                .connectTimeout(15, TimeUnit.SECONDS)
+                .writeTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(30, TimeUnit.SECONDS)
+                .build()
+        }
     }
 
 }
