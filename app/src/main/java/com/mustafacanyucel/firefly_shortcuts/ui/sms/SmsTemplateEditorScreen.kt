@@ -24,6 +24,7 @@ import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -54,6 +55,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.mustafacanyucel.firefly_shortcuts.BuildConfig
 import com.mustafacanyucel.firefly_shortcuts.R
 import com.mustafacanyucel.firefly_shortcuts.appContainer
 import com.mustafacanyucel.firefly_shortcuts.sms.FieldKind
@@ -204,6 +206,7 @@ fun SmsTemplateEditorScreen(templateId: Long, onDone: () -> Unit) {
 
 @Composable
 private fun SamplePaste(vm: SmsTemplateEditorViewModel) {
+    if (BuildConfig.SMS_ENABLED) WaitForSms(vm)
     OutlinedTextField(
         value = vm.draftSample,
         onValueChange = { vm.draftSample = it },
@@ -224,6 +227,30 @@ private fun SamplePaste(vm: SmsTemplateEditorViewModel) {
         enabled = vm.draftSample.isNotBlank(),
         modifier = Modifier.fillMaxWidth(),
     ) { Text("Use this message") }
+}
+
+@Composable
+private fun WaitForSms(vm: SmsTemplateEditorViewModel) {
+    val canReceive = LocalContext.current.canReceiveSms()
+    when {
+        !canReceive -> Hint("Allow SMS access on the templates screen to use a message as it arrives.")
+        vm.waitingForSms -> Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+            Text("Waiting for an SMS…", modifier = Modifier.weight(1f))
+            TextButton(onClick = vm::stopWaiting) { Text("Cancel") }
+        }
+        else -> {
+            OutlinedButton(onClick = vm::waitForSms, modifier = Modifier.fillMaxWidth()) {
+                Text("Use the next SMS that arrives")
+            }
+            vm.receivedFrom?.let {
+                Hint("Received from $it. Its sender is added above.")
+            } ?: Hint("Or copy one from your SMS app and paste it below.")
+        }
+    }
 }
 
 @Composable

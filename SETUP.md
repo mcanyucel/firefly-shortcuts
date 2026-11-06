@@ -26,13 +26,22 @@ If you build outside Android Studio, point `JAVA_HOME` at a JDK 17+ and tell Gra
 sdk.dir=/path/to/Android/Sdk
 ```
 
+## Build variants
+
+There are two flavors, with the same application ID and signing key:
+
+- `github`: the APK published on GitHub releases. It can read bank SMS (`RECEIVE_SMS`).
+- `play`: the Google Play build. It has no SMS permission and hides the Bank SMS settings, because Google Play allows SMS access only after a manual review.
+
+The SMS permission and receiver are declared in `app/src/github/AndroidManifest.xml`. In code, `BuildConfig.SMS_ENABLED` tells the two apart.
+
 ## Debug builds
 
 ```bash
-./gradlew installDebug
+./gradlew installGithubDebug
 ```
 
-This builds and installs a debug build on the connected device. Debug builds use the application ID `com.mustafacanyucel.firefly_shortcuts.debug` and the version name suffix `-debug`, so they install next to the released app instead of replacing it.
+This builds and installs a debug build of the GitHub flavor on the connected device (`installPlayDebug` for the Play flavor). Debug builds use the application ID `com.mustafacanyucel.firefly_shortcuts.debug` and the version name suffix `-debug`, so they install next to the released app instead of replacing it.
 
 ## Tests
 
@@ -51,20 +60,26 @@ keyAlias=...
 keyPassword=...
 ```
 
-A relative `storeFile` path is resolved from the `app` folder. Then build:
+A relative `storeFile` path is resolved from the `app` folder. Then build the GitHub APK:
 
 ```bash
-./gradlew assembleRelease
+./gradlew assembleGithubRelease
 ```
 
-The APK is written to `app/build/outputs/apk/release/app-release.apk`. There is one universal APK; the app has no native libraries, so there are no per-ABI builds.
+The APK is written to `app/build/outputs/apk/github/release/app-github-release.apk`. There is one universal APK; the app has no native libraries, so there are no per-ABI builds.
+
+For Google Play, build the app bundle; it is written to `app/build/outputs/bundle/playRelease/app-play-release.aab`:
+
+```bash
+./gradlew bundlePlayRelease
+```
 
 Without `key.properties` the release build can't be signed. To build a release APK for yourself, create your own keystore (Android Studio: **Build → Generate Signed App Bundle or APK**) and point `key.properties` at it. An APK signed with a different key can't be installed over the published app; uninstall that first.
 
 To check which certificate an APK is signed with:
 
 ```bash
-apksigner verify --print-certs app/build/outputs/apk/release/app-release.apk
+apksigner verify --print-certs app/build/outputs/apk/github/release/app-github-release.apk
 ```
 
 `apksigner` is in the Android SDK's `build-tools/<version>` folder.
@@ -79,7 +94,9 @@ All code is in the `app` module, under `app/src/main/java/com/mustafacanyucel/fi
 - `data/settings/`, `data/secrets/`: settings in DataStore, and tokens encrypted with an Android Keystore key.
 - `sync/`: downloads accounts, categories, budgets, bills, piggy banks and tags.
 - `run/`: creates a shortcut's transaction in Firefly III.
-- `ui/`: the Compose screens (home, editor, sync, settings).
+- `sms/`: reads bank SMS with user-made templates. Plain Kotlin with no Android code, so it's covered by unit tests.
+- `inbox/`: receives incoming SMS (GitHub flavor only) and stores what a template recognises as a pending bank transaction.
+- `ui/`: the Compose screens (home, editor, sync, settings, SMS templates).
 - `widget/`: draws the home screen widget and runs widget taps in the background with WorkManager.
 - `upgrade/`: deletes the data left behind by the Flutter app (1.0.x) after an update.
 

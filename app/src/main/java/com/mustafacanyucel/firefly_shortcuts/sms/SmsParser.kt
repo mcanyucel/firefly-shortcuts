@@ -37,15 +37,22 @@ sealed interface SmsParseResult {
     data class Parsed(val sms: ParsedSms) : SmsParseResult
 }
 
+/** A template that recognised a message, and what it read. */
+data class SmsMatch(val template: SmsTemplate, val result: SmsParseResult)
+
 /**
  * Finds the first template for [sender] that matches [body]. Null when none does, which is the
  * normal case for every message that isn't from the bank.
  */
-fun parseSms(sender: String, body: String, templates: List<SmsTemplate>): SmsParseResult? =
+fun matchSms(sender: String, body: String, templates: List<SmsTemplate>): SmsMatch? =
     templates.asSequence()
         .filter { template -> template.senders.any { sameSender(it, sender) } }
-        .map { it.parse(body) }
-        .firstOrNull { it != SmsParseResult.NoMatch }
+        .map { SmsMatch(it, it.parse(body)) }
+        .firstOrNull { it.result != SmsParseResult.NoMatch }
+
+/** What the first matching template reads from [body], or null if none matches. */
+fun parseSms(sender: String, body: String, templates: List<SmsTemplate>): SmsParseResult? =
+    matchSms(sender, body, templates)?.result
 
 /** Reads [body] with this template. A template with problems never matches. */
 fun SmsTemplate.parse(body: String): SmsParseResult {

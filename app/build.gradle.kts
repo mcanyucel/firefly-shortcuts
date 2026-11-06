@@ -40,6 +40,20 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // Same app ID and key for both. Only the GitHub build reads SMS: Google Play allows the SMS
+    // permission only after a manual review of the app's core function.
+    flavorDimensions += "store"
+    productFlavors {
+        create("github") {
+            dimension = "store"
+            buildConfigField("boolean", "SMS_ENABLED", "true")
+        }
+        create("play") {
+            dimension = "store"
+            buildConfigField("boolean", "SMS_ENABLED", "false")
+        }
+    }
+
     buildTypes {
         debug {
             applicationIdSuffix = ".debug"
@@ -58,6 +72,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 

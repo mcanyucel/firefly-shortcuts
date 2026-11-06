@@ -23,6 +23,9 @@ import com.mustafacanyucel.firefly_shortcuts.sms.problems
 import com.mustafacanyucel.firefly_shortcuts.sms.splitSample
 import com.mustafacanyucel.firefly_shortcuts.sms.suggestMarks
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 private val DATE_KINDS = setOf(FieldKind.DATE, FieldKind.TIME, FieldKind.DATE_TIME)
@@ -44,6 +47,14 @@ class SmsTemplateEditorViewModel(
     var draftSample by mutableStateOf("")
     /** An optional second message of the same kind; what differs from the sample gets marked. */
     var draftSecond by mutableStateOf("")
+    /** True while waiting for the next incoming SMS to use as the sample. */
+    var waitingForSms by mutableStateOf(false)
+        private set
+    /** The sender of the SMS that was received while waiting, as Android reports it. */
+    var receivedFrom by mutableStateOf<String?>(null)
+        private set
+    private var waitJob: Job? = null
+
     /** Says what comparing with another message marked. */
     var suggestionNote by mutableStateOf<String?>(null)
         private set
@@ -132,6 +143,39 @@ class SmsTemplateEditorViewModel(
             }
             return list
         }
+
+    /**
+     * Waits for the next incoming SMS and puts it in the paste box, adding its sender to the
+     * sender names. The message is held in memory only.
+     */
+    fun waitForSms() {
+        val capture = container.smsCapture
+        waitJob?.cancel()
+        capture.start()
+        waitingForSms = true
+        receivedFrom = null
+        waitJob = viewModelScope.launch {
+            val sms = capture.message.filterNotNull().first()
+            capture.stop()
+            waitingForSms = false
+            draftSample = sms.body
+            receivedFrom = sms.sender
+            val names = senders.split(',').map { it.trim() }.filter { it.isNotEmpty() }
+            if (names.none { it.equals(sms.sender, ignoreCase = true) }) {
+                senders = (names + sms.sender).joinToString(", ")
+            }
+        }
+    }
+
+    fun stopWaiting() {
+        waitJob?.cancel()
+        container.smsCapture.stop()
+        waitingForSms = false
+    }
+
+    override fun onCleared() {
+        if (waitingForSms) container.smsCapture.stop()
+    }
 
     fun useDraftSample() {
         loadSample(draftSample)

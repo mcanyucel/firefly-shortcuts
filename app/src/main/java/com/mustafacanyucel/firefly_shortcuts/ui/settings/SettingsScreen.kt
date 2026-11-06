@@ -47,6 +47,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.mustafacanyucel.firefly_shortcuts.BuildConfig
 import com.mustafacanyucel.firefly_shortcuts.R
 import com.mustafacanyucel.firefly_shortcuts.appContainer
 import com.mustafacanyucel.firefly_shortcuts.auth.AuthState
@@ -194,7 +195,18 @@ fun SettingsScreen(
                 OutlinedButton(onClick = vm::disconnect, modifier = Modifier.fillMaxWidth()) {
                     Text("Disconnect")
                 }
+            } else {
+                Button(onClick = vm::connect, enabled = !vm.busy, modifier = Modifier.fillMaxWidth()) {
+                    if (vm.busy) {
+                        CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                    } else {
+                        Text("Connect")
+                    }
+                }
+            }
 
+            // Only the GitHub build can read SMS.
+            if (signedIn && BuildConfig.SMS_ENABLED) {
                 HorizontalDivider(Modifier.padding(vertical = 8.dp))
                 SectionTitle("Bank SMS")
                 Text(
@@ -204,14 +216,6 @@ fun SettingsScreen(
                 )
                 OutlinedButton(onClick = onOpenSmsTemplates, modifier = Modifier.fillMaxWidth()) {
                     Text("SMS templates")
-                }
-            } else {
-                Button(onClick = vm::connect, enabled = !vm.busy, modifier = Modifier.fillMaxWidth()) {
-                    if (vm.busy) {
-                        CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
-                    } else {
-                        Text("Connect")
-                    }
                 }
             }
         }
