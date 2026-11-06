@@ -134,12 +134,33 @@ Gradle product flavors with a separate manifest for the SMS permission and recei
    - **Automatic:** post as a withdrawal with the merchant as `destination_name`. Firefly's own rules set the category, budget and tags (e.g. "description contains VANTA → Food").
    - **Review first:** show a notification ("644,00 TL at V A N T A"). Tapping it opens the Feature 1 popup already filled in, where you pick a shortcut to borrow the accounts, category and tags from. Optional merchant → shortcut rules let known places post automatically.
 
-Make the sender and pattern settings rather than hard-coded, with a "paste a sample SMS to test" box, so the feature works for other banks.
+### Templates (decided 2026-11-06)
+
+Every bank, and every user's language, has its own wording, so nothing is hard-coded. The user builds a **template** from a sample SMS, and every later SMS is parsed by that template alone: no model, nothing leaves the phone, and the same text always gives the same result.
+
+- **No LLM.** A cloud model breaks privacy. Gemini Nano runs only on recent flagships and comes through Play services, so de-Googled phones on the GitHub build lack it. A downloaded model is 400 MB to 1 GB, slow on cheap phones, and can misread an amount. An LLM would only ever be needed once, to suggest a template from a sample, so it can come later as an optional helper.
+- **A template** is a list of senders plus a list of parts: fixed text and fields. Senders are a list because one bank can show up under different names: YapıKredi's SMS shows as `YAPIKREDI` on the phone but as `927457334` in Windows Phone Link. Which one Android hands the app is still to be checked on a device (step 3). Field kinds: amount, currency, date, time, date and time, merchant, card ending, and "ignore" for parts that change but aren't needed (like the `B002` reference). Runs of whitespace in the fixed text match any whitespace, so line breaks don't matter.
+- **Several templates per sender**, each set to withdrawal, deposit or ignore. This covers refunds, foreign currency and instalments without special code.
+- **The amount is optional.** Some messages leave it out (the bank's online-purchase SMS gives card, merchant and time only). Such a message can never post automatically; the review popup asks for the amount.
+- **The account comes from the card ending.** Bank SMS don't name the account; the sender says which bank, the card ending which card. Each bank's templates share a table of card ending → Firefly asset account (per bank, since two banks can both have a card ending in `1111`). It's the source for a withdrawal and the destination for a refund. The merchant is the other side, by name, so Firefly creates the expense or revenue account if needed. An unknown card ending (a new card, or a bank that doesn't write one) goes to review, which can offer to remember the choice.
+- **The sender isn't proof.** Alphanumeric sender names can be spoofed, which is one more reason review is the default.
+- **Declined payments** get an ignore template. Marking the reason as "ignore" too catches other decline reasons with the same wording around them.
+- **Editor:** the user pastes a sample and taps pieces of it to mark fields. Split it finer than words: `12:18'de,V A N T A` must split into the time, `'de,` and the merchant. Selecting a first and last piece marks a range, for spaced names like `V A N T A`. With two samples, the app compares them: matching text is the fixed part, and the differences are the fields to name. A test box shows what another SMS gives.
+- **Sharing:** templates import and export as a file or QR code. A list of templates in the GitHub repo, added by users, lets most people pick their bank instead of building one.
+
+Steps:
+
+1. **Template engine:** plain Kotlin, no Android. Template + SMS → parsed fields, ignored, or no match. Unit tests on real messages. It doesn't care where the text came from, so the Play fallback (notification listener) uses it too.
+2. **Template editor screen:** paste, mark fields, compare two samples, live test, import and export.
+3. **Receiving SMS:** GitHub-only product flavor with `RECEIVE_SMS`; filter by sender and hand off to WorkManager. Log the sender Android reports on a real device first. Let the editor pick the sender from a received message instead of typing it.
+4. **Posting:** card ending → account table; review notification by default, automatic posting as a per-template option. Decide what time to use when the SMS has a date only (refunds).
+
+**Status (2026-11-06):** step 1 done (`sms/` package). `BankSmsSamplesTest` reads 9 real YapıKredi messages (card purchases in TL and EUR, an online purchase without an amount, two declined payments, a refund) with four templates; each message matches exactly one.
 
 ## Open questions
 
-1. **Feature 2:** should parsed SMS post automatically, or always wait for confirmation?
-2. **Feature 2:** does the bank use different wording for refunds, foreign currency, or instalment ("taksit") purchases? Each needs its own pattern, or should be ignored deliberately.
+1. ~~**Feature 2:** should parsed SMS post automatically, or always wait for confirmation?~~ **Review first by default**, with automatic posting as a per-template option (decided 2026-11-06).
+2. ~~**Feature 2:** does the bank use different wording for refunds, foreign currency, or instalment ("taksit") purchases?~~ **Each wording gets its own template**, set to withdrawal, deposit or ignore (decided 2026-11-06). Still worth collecting real samples of each.
 3. ~~**Play:** same application ID as the GitHub build, or a separate one?~~ **Same ID**, same key (see "Before publishing on Google Play").
 4. ~~**Native rewrite:** import shortcuts from the old Flutter database, or start fresh?~~ **Start fresh** (decided 2026-11-05). 2.0.0 deletes 1.0.3's data on first start; users sign in, sync and create shortcuts again.
 
@@ -148,5 +169,5 @@ Make the sender and pattern settings rather than hard-coded, with a "paste a sam
 1. ~~Step 0: native rewrite, released as 2.0.0.~~ Done 2026-11-05.
 2. Start the Play closed test as early as possible. In progress: 2.0.0 sent for review on 2026-11-05; testers still to be recruited (12 for 14 days).
 3. ~~Feature 1. It is self-contained, and Feature 2's review flow reuses its popup.~~ Done 2026-11-05, released as 2.1.0.
-4. Feature 2, GitHub build first. **Next.** Answer open questions 1 and 2 first.
+4. Feature 2, GitHub build first. **In progress** (see "Templates").
 5. Feature 2 on Play, after the declaration is approved.
