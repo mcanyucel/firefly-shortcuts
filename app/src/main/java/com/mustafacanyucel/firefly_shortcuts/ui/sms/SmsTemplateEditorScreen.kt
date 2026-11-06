@@ -171,6 +171,11 @@ fun SmsTemplateEditorScreen(templateId: Long, onDone: () -> Unit) {
                     modifier = Modifier.fillMaxWidth(),
                 )
                 vm.testResult?.let { ResultCard(it) }
+                if (vm.testMessage.isNotBlank()) {
+                    TextButton(onClick = vm::markDifferencesFromTest) {
+                        Text("Mark what differs from this message")
+                    }
+                }
             }
 
             vm.problems.forEach { Text(it, color = MaterialTheme.colorScheme.error) }
@@ -204,6 +209,14 @@ private fun SamplePaste(vm: SmsTemplateEditorViewModel) {
         onValueChange = { vm.draftSample = it },
         placeholder = { Text("Copy a message from your SMS app and paste it here") },
         minLines = 4,
+        modifier = Modifier.fillMaxWidth(),
+    )
+    OutlinedTextField(
+        value = vm.draftSecond,
+        onValueChange = { vm.draftSecond = it },
+        label = { Text("Another message of the same kind (optional)") },
+        supportingText = { Text("What differs between the two messages gets marked for you.") },
+        minLines = 2,
         modifier = Modifier.fillMaxWidth(),
     )
     Button(
@@ -250,6 +263,7 @@ private fun MarkingArea(vm: SmsTemplateEditorViewModel) {
             }
         }
     }
+    vm.suggestionNote?.let { Hint(it) }
     if (vm.selection != null) {
         SelectionPanel(vm)
     }

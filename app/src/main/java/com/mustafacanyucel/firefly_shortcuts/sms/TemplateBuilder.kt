@@ -108,6 +108,8 @@ private fun guessDate(text: String): String? {
 }
 
 private fun guessTime(text: String): String? {
+    // A comma never separates hours and minutes, but often separates decimals: 5,00
+    if (',' in text) return null
     val groups = digitGroups(text) ?: return null
     if (groups.size !in 2..3 || groups.drop(1).any { it.value.length != 2 }) return null
     val letters = listOf(twoOrOne('H', groups[0].value.length), "mm", "ss").take(groups.size)
@@ -159,4 +161,110 @@ fun guessDecimalMark(amount: String): Char? {
         amount.length - last - 1 == 3 -> null
         else -> mark
     }
+}
+
+/**
+ * Fields suggested by comparing the sample with [other], another message of the same kind: the
+ * pieces that differ become fields, the rest stays fixed text. Kinds in [taken] aren't suggested
+ * again. Something that happens to be the same in both (often the card ending) isn't found, so
+ * the user still checks the result.
+ */
+fun suggestMarks(
+    sample: String,
+    pieces: List<Piece>,
+    other: List<Piece>,
+    taken: Set<FieldKind> = emptySet(),
+): List<FieldMark> {
+    val matched = matchedPieces(pieces.map { it.text }, other.map { it.text })
+    val runs = mutableListOf<IntRange>()
+    var start = -1
+    for (i in pieces.indices) {
+        if (!matched[i] && start < 0) start = i
+        if (matched[i] && start >= 0) {
+            runs += start until i
+            start = -1
+        }
+    }
+    if (start >= 0) runs += start until pieces.size
+    // Numbers with separators (amounts, dates, times) are fields of their own, even when they
+    // touch another difference: "1.590,00 TL" is an amount and a currency.
+    val split = runs.flatMap { run ->
+        val parts = mutableListOf<IntRange>()
+        var first = run.first
+        for (i in run) {
+            if (STRUCTURED_NUMBER.matches(pieces[i].text)) {
+                if (i > first) parts += first until i
+                parts += i..i
+                first = i + 1
+            }
+        }
+        if (first <= run.last) parts += first..run.last
+        parts
+    }
+
+    fun text(range: IntRange) = sample.substring(pieces[range.first].start, pieces[range.last].end)
+    fun hasLetters(range: IntRange) = text(range).any { it.isLetter() }
+
+    // Two merchants can share a word ("CATERING VE R", "MIGROS VE SANAL"), which would split the
+    // merchant in two. Join word runs that only one matching piece separates.
+    val joined = mutableListOf<IntRange>()
+    split.forEach { run ->
+        val last = joined.lastOrNull()
+        if (last != null && run.first - last.last - 1 <= 1 && hasLetters(last) && hasLetters(run)) {
+            joined[joined.lastIndex] = last.first..run.last
+        } else {
+            joined += run
+        }
+    }
+
+    val used = taken.toMutableSet()
+    return joined.map { run ->
+        val value = text(run)
+        val kind = guessKind(value, used)
+        if (kind != FieldKind.IGNORE) used += kind
+        FieldMark(run.first, run.last, kind, if (kind in DATE_KINDS) guessDateFormat(kind, value) else null)
+    }
+}
+
+private val STRUCTURED_NUMBER = Regex("""\d+(?:[.,:/\-]\d+)+""")
+private val AMOUNT_TEXT = Regex("""\d[\d.,' ]*[.,]\d{1,2}""")
+private val CURRENCY_TEXT = Regex("""[A-Z]{2,3}|[€$£₺¥]""")
+private val CARD_TEXT = Regex("""\d{4}""")
+
+private fun guessKind(text: String, used: Set<FieldKind>): FieldKind {
+    fun free(kind: FieldKind) = kind !in used
+    val dateKind = listOf(FieldKind.DATE_TIME, FieldKind.DATE)
+        .firstOrNull { guessDateFormat(it, text) != null }
+    return when {
+        dateKind != null && free(dateKind) &&
+            (dateKind != FieldKind.DATE_TIME || (free(FieldKind.DATE) && free(FieldKind.TIME))) -> dateKind
+        AMOUNT_TEXT.matches(text) && free(FieldKind.AMOUNT) -> FieldKind.AMOUNT
+        guessDateFormat(FieldKind.TIME, text) != null && free(FieldKind.TIME) -> FieldKind.TIME
+        CURRENCY_TEXT.matches(text) && free(FieldKind.CURRENCY) -> FieldKind.CURRENCY
+        CARD_TEXT.matches(text) && free(FieldKind.CARD_ENDING) -> FieldKind.CARD_ENDING
+        text.any { it.isLetter() } && free(FieldKind.MERCHANT) -> FieldKind.MERCHANT
+        else -> FieldKind.IGNORE
+    }
+}
+
+/** Which of [a] are in a longest common subsequence with [b]. */
+private fun matchedPieces(a: List<String>, b: List<String>): BooleanArray {
+    val lengths = Array(a.size + 1) { IntArray(b.size + 1) }
+    for (i in a.indices.reversed()) {
+        for (j in b.indices.reversed()) {
+            lengths[i][j] = if (a[i] == b[j]) lengths[i + 1][j + 1] + 1
+            else maxOf(lengths[i + 1][j], lengths[i][j + 1])
+        }
+    }
+    val matched = BooleanArray(a.size)
+    var i = 0
+    var j = 0
+    while (i < a.size && j < b.size) {
+        when {
+            a[i] == b[j] -> { matched[i] = true; i++; j++ }
+            lengths[i + 1][j] >= lengths[i][j + 1] -> i++
+            else -> j++
+        }
+    }
+    return matched
 }

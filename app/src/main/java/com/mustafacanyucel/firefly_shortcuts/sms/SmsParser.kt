@@ -105,7 +105,7 @@ fun SmsTemplate.problems(): List<TemplateProblem> {
 }
 
 private val WHITESPACE = Regex("\\s+")
-private val DATE_KINDS = setOf(FieldKind.DATE, FieldKind.TIME, FieldKind.DATE_TIME)
+internal val DATE_KINDS = setOf(FieldKind.DATE, FieldKind.TIME, FieldKind.DATE_TIME)
 
 private fun sameSender(a: String, b: String): Boolean =
     a.filterNot { it.isWhitespace() }.equals(b.filterNot { it.isWhitespace() }, ignoreCase = true)

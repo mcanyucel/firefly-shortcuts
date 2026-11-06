@@ -99,7 +99,52 @@ class TemplateBuilderTest {
         assertNull(guessDateFormat(FieldKind.DATE, "02.11")) // no year
         assertNull(guessDateFormat(FieldKind.DATE, "31.13.2026")) // no month 13
         assertNull(guessDateFormat(FieldKind.TIME, "9:5"))
+        assertNull(guessDateFormat(FieldKind.TIME, "5,00")) // an amount
         assertNull(guessDateFormat(FieldKind.AMOUNT, "12.50"))
+    }
+
+    @Test
+    fun suggestsWhatDiffersFromAnotherMessage() {
+        val other = "Degerli Musterimiz, 1111 ile biten World Platinum kartinizla 10.10.2026 saat " +
+            "13:47'de,Avolta BCN M4 Express Sho is yerinden 19,65 EUR islem yapilmistir. Islem size " +
+            "ait degilse bankamizla iletisime gecebilirsiniz. B001"
+        val suggested = suggestMarks(sample, pieces, splitSample(other))
+        assertEquals(
+            listOf(
+                // The card ending is the same in both, so it isn't found.
+                FieldMark(index("31.10.2026"), index("31.10.2026"), FieldKind.DATE, "dd.MM.yyyy"),
+                FieldMark(index("21:48"), index("21:48"), FieldKind.TIME, "HH:mm"),
+                FieldMark(index("V"), index("A", index("V") + 3), FieldKind.MERCHANT),
+                FieldMark(index("1.590,00"), index("1.590,00"), FieldKind.AMOUNT),
+                FieldMark(index("TL"), index("TL"), FieldKind.CURRENCY),
+                FieldMark(index("002"), index("002"), FieldKind.IGNORE),
+            ),
+            suggested,
+        )
+    }
+
+    @Test
+    fun keepsAMerchantTogetherWhenAWordMatches() {
+        val a = "Spent 5,00 at ANKARA CATERING VE R today"
+        val b = "Spent 7,50 at MIGROS VE SANAL today"
+        val pieces = splitSample(a)
+        val suggested = suggestMarks(a, pieces, splitSample(b))
+        val merchant = suggested.single { it.kind == FieldKind.MERCHANT }
+        assertEquals("ANKARA CATERING VE R", a.substring(pieces[merchant.first].start, pieces[merchant.last].end))
+        assertEquals(listOf(FieldKind.AMOUNT, FieldKind.MERCHANT), suggested.map { it.kind })
+    }
+
+    @Test
+    fun suggestsNothingForTheSameMessage() {
+        assertEquals(emptyList<FieldMark>(), suggestMarks(sample, pieces, pieces))
+    }
+
+    @Test
+    fun doesntSuggestAFieldThatsAlreadyMarked() {
+        val other = sample.replace("1.590,00", "7,50").replace("1111", "2222")
+        val suggested = suggestMarks(sample, pieces, splitSample(other), taken = setOf(FieldKind.AMOUNT))
+        // The card comes first in the message; the amount is already marked, so it's ignored.
+        assertEquals(listOf(FieldKind.CARD_ENDING, FieldKind.IGNORE), suggested.map { it.kind })
     }
 
     @Test

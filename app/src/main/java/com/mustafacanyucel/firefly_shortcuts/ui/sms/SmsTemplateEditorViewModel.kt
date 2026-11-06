@@ -21,6 +21,7 @@ import com.mustafacanyucel.firefly_shortcuts.sms.marksFor
 import com.mustafacanyucel.firefly_shortcuts.sms.parse
 import com.mustafacanyucel.firefly_shortcuts.sms.problems
 import com.mustafacanyucel.firefly_shortcuts.sms.splitSample
+import com.mustafacanyucel.firefly_shortcuts.sms.suggestMarks
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
@@ -41,6 +42,11 @@ class SmsTemplateEditorViewModel(
 
     /** The text in the paste box, before it's used as the sample. */
     var draftSample by mutableStateOf("")
+    /** An optional second message of the same kind; what differs from the sample gets marked. */
+    var draftSecond by mutableStateOf("")
+    /** Says what comparing with another message marked. */
+    var suggestionNote by mutableStateOf<String?>(null)
+        private set
     var sample by mutableStateOf("")
         private set
     var pieces by mutableStateOf(emptyList<Piece>())
@@ -132,9 +138,35 @@ class SmsTemplateEditorViewModel(
         marks = emptyList()
         marksLost = false
         decimalMark = null
+        suggestionNote = null
+        if (draftSecond.isNotBlank()) {
+            testMessage = draftSecond
+            markDifferences(draftSecond)
+        }
+    }
+
+    /** Marks what differs between the sample and the test message, leaving existing marks alone. */
+    fun markDifferencesFromTest() = markDifferences(testMessage)
+
+    private fun markDifferences(other: String) {
+        val taken = marks.map { it.kind }.filter { it != FieldKind.IGNORE }.toSet()
+        val suggested = suggestMarks(sample, pieces, splitSample(other.trim()), taken)
+            .filter { s -> marks.none { it.overlaps(s.range) } }
+        marks = marks + suggested
+        suggested.firstOrNull { it.kind == FieldKind.AMOUNT }
+            ?.let { guessDecimalMark(textOf(it)) }
+            ?.let { decimalMark = it }
+        suggestionNote = if (suggested.isEmpty()) {
+            "Nothing new differs between the two messages."
+        } else {
+            "Marked ${suggested.size} parts that differ between the two messages. Check them, and " +
+                "mark anything that happened to be the same in both, like the card ending."
+        }
+        clearSelection()
     }
 
     fun changeSample() {
+        suggestionNote = null
         draftSample = sample
         sample = ""
         pieces = emptyList()

@@ -155,7 +155,7 @@ Steps:
 3. **Receiving SMS:** GitHub-only product flavor with `RECEIVE_SMS`; filter by sender and hand off to WorkManager. Log the sender Android reports on a real device first. Let the editor pick the sender from a received message instead of typing it.
 4. **Posting:** card ending → account table; review notification by default, automatic posting as a per-template option. Decide what time to use when the SMS has a date only (refunds).
 
-**Status (2026-11-06):** step 1 done (`sms/` package). Step 2 in progress: templates are stored in Room (`sms_templates`, database version 3, kept on a server switch), with a list and an editor under Settings → Bank SMS (shown when signed in). Still to do in step 2: comparing two samples, import and export. `BankSmsSamplesTest` reads 9 real YapıKredi messages (card purchases in TL and EUR, an online purchase without an amount, two declined payments, a refund) with four templates; each message matches exactly one.
+**Status (2026-11-06):** step 1 done (`sms/` package). Step 2 in progress: templates are stored in Room (`sms_templates`, database version 3, kept on a server switch), with a list and an editor under Settings → Bank SMS (shown when signed in). Comparing two messages works: an optional second message when pasting, or "Mark what differs" under the test box; numbers like amounts and dates always become fields of their own, and parts that are the same in both (often the card ending) still need marking by hand. Still to do in step 2: import and export. `BankSmsSamplesTest` reads 9 real YapıKredi messages (card purchases in TL and EUR, an online purchase without an amount, two declined payments, a refund) with four templates; each message matches exactly one.
 
 ## Open questions
 
