@@ -105,7 +105,7 @@ Implementation notes:
 For fully random expenses. The card sends an SMS on every purchase, in a fixed format:
 
 ```
-Degerli Musterimiz, 1279 ile biten World Platinum kartinizla 02.11.2026 saat 12:18'de,V A N T A is yerinden 644,00 TL islem yapilmistir. Islem size ait degilse bankamizla iletisime gecebilirsiniz. B002
+Degerli Musterimiz, 1111 ile biten World Platinum kartinizla 02.11.2026 saat 12:18'de,V A N T A is yerinden 644,00 TL islem yapilmistir. Islem size ait degilse bankamizla iletisime gecebilirsiniz. B002
 ```
 
 ### How to receive the SMS
@@ -127,7 +127,7 @@ Gradle product flavors with a separate manifest for the SMS permission and recei
 ### Processing a message
 
 1. **Filter:** match the sender and the pattern; ignore everything else.
-2. **Extract:** card ending (`1279`), date and time (`02.11.2026 12:18`), merchant (`V A N T A`), amount and currency (`644,00 TL`).
+2. **Extract:** card ending (`1111`), date and time (`02.11.2026 12:18`), merchant (`V A N T A`), amount and currency (`644,00 TL`).
 3. **Map** the card ending to a Firefly source account (a new setting).
 4. **Use the SMS date and time as the transaction date**, so a retry is caught by Firefly's duplicate check.
 5. **Post it**, either automatically or after review (see open questions):
