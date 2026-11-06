@@ -18,6 +18,8 @@ import com.mustafacanyucel.firefly_shortcuts.ui.editor.EditorScreen
 import com.mustafacanyucel.firefly_shortcuts.ui.sync.SyncScreen
 import com.mustafacanyucel.firefly_shortcuts.ui.home.HomeScreen
 import com.mustafacanyucel.firefly_shortcuts.ui.settings.SettingsScreen
+import com.mustafacanyucel.firefly_shortcuts.ui.sms.SmsTemplateEditorScreen
+import com.mustafacanyucel.firefly_shortcuts.ui.sms.SmsTemplatesScreen
 
 import kotlinx.serialization.Serializable
 
@@ -32,6 +34,12 @@ data object SyncRoute
 
 @Serializable
 data class EditorRoute(val id: Long = 0)
+
+@Serializable
+data object SmsTemplatesRoute
+
+@Serializable
+data class SmsTemplateEditorRoute(val id: Long = 0)
 
 @Composable
 fun AppNavHost() {
@@ -74,6 +82,7 @@ fun AppNavHost() {
             SettingsScreen(
                 canGoBack = canGoBack,
                 onBack = { navController.popBackStack() },
+                onOpenSmsTemplates = { navController.navigate(SmsTemplatesRoute) },
                 onConnected = {
                     if (navController.previousBackStackEntry != null) {
                         navController.popBackStack()
@@ -89,6 +98,19 @@ fun AppNavHost() {
             EditorScreen(
                 shortcutId = entry.toRoute<EditorRoute>().id,
                 onDone = { navController.popBackStack<EditorRoute>(inclusive = true) },
+            )
+        }
+        composable<SmsTemplatesRoute> {
+            SmsTemplatesScreen(
+                onBack = { navController.popBackStack() },
+                onAdd = { navController.navigate(SmsTemplateEditorRoute()) },
+                onEdit = { id -> navController.navigate(SmsTemplateEditorRoute(id)) },
+            )
+        }
+        composable<SmsTemplateEditorRoute> { entry ->
+            SmsTemplateEditorScreen(
+                templateId = entry.toRoute<SmsTemplateEditorRoute>().id,
+                onDone = { navController.popBackStack<SmsTemplateEditorRoute>(inclusive = true) },
             )
         }
     }

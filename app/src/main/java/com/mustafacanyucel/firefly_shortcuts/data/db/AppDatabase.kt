@@ -17,10 +17,12 @@ import androidx.room.TypeConverters
         TagEntity::class,
         ShortcutEntity::class,
         ShortcutTagEntity::class,
+        SmsTemplateEntity::class,
     ],
-    version = 2,
+    version = 3,
     autoMigrations = [
         AutoMigration(from = 1, to = 2), // shortcuts.askAmount
+        AutoMigration(from = 2, to = 3), // sms_templates
     ],
 )
 @TypeConverters(Converters::class)
@@ -32,6 +34,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun piggybankDao(): PiggybankDao
     abstract fun tagDao(): TagDao
     abstract fun shortcutDao(): ShortcutDao
+    abstract fun smsTemplateDao(): SmsTemplateDao
 
     companion object {
         fun create(context: Context): AppDatabase =

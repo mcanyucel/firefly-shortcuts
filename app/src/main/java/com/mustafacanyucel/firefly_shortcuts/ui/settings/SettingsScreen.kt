@@ -61,6 +61,7 @@ import java.time.Instant
 fun SettingsScreen(
     canGoBack: Boolean,
     onBack: () -> Unit,
+    onOpenSmsTemplates: () -> Unit,
     onConnected: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -192,6 +193,17 @@ fun SettingsScreen(
             if (signedIn) {
                 OutlinedButton(onClick = vm::disconnect, modifier = Modifier.fillMaxWidth()) {
                     Text("Disconnect")
+                }
+
+                HorizontalDivider(Modifier.padding(vertical = 8.dp))
+                SectionTitle("Bank SMS")
+                Text(
+                    "Templates that tell the app how to read your bank's SMS.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                OutlinedButton(onClick = onOpenSmsTemplates, modifier = Modifier.fillMaxWidth()) {
+                    Text("SMS templates")
                 }
             } else {
                 Button(onClick = vm::connect, enabled = !vm.busy, modifier = Modifier.fillMaxWidth()) {

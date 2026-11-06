@@ -215,7 +215,7 @@ private fun isUsableDateFormat(kind: FieldKind, format: String?): Boolean {
     }
 }
 
-private fun <T> readDateTime(
+internal fun <T> readDateTime(
     text: String,
     format: String,
     query: TemporalQuery<T>,

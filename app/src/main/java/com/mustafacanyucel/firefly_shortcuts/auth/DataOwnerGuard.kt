@@ -28,7 +28,12 @@ class DataOwnerGuard(
 
         val changed  = previous != null && previous != owner
         if (changed) {
-            withContext(Dispatchers.IO) { database.clearAllTables() }
+            withContext(Dispatchers.IO) {
+                // SMS templates describe the bank's wording, not Firefly data, so they stay.
+                val templates = database.smsTemplateDao().getAll()
+                database.clearAllTables()
+                database.smsTemplateDao().insertAll(templates)
+            }
             settings.setLastSync(null)
         }
         settings.setDataOwner(owner)
