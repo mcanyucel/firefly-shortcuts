@@ -22,6 +22,11 @@ data class SmsTemplate(
      * because a lone separator is taken as the decimal mark.
      */
     val decimalMark: Char? = null,
+    /**
+     * Send matching messages to Firefly without asking, when nothing needs the user: the amount,
+     * the merchant and the card's account are known, and the amount is in that account's currency.
+     */
+    val autoPost: Boolean = false,
 )
 
 @Serializable

@@ -3,6 +3,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.RECEIVE_SMS" />
+    <!-- To ask for a review of each bank SMS that a template reads. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application>
         <!-- BROADCAST_SMS: only the system can send this broadcast. -->
@@ -14,5 +16,15 @@
                 <action android:name="android.provider.Telephony.SMS_RECEIVED" />
             </intent-filter>
         </receiver>
+
+        <!-- Review of a bank SMS, over whatever is on screen. Not exported: opened by the app's
+             own notifications and screens. Its own task, like the widget's amount prompt. -->
+        <activity
+            android:name="com.mustafacanyucel.firefly_shortcuts.ui.sms.BankReviewActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:theme="@style/Theme.FireflyShortcuts.Popup"
+            android:windowSoftInputMode="adjustResize" />
     </application>
 </manifest>

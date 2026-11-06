@@ -37,7 +37,7 @@ const val SECRETS_KEY_ALIAS = "secrets"
  * The app's singletons. Activities, workers, and the widget reach it through [AppContainer].
  */
 class AppContainer(context: Context) {
-    private val appContext = context.applicationContext
+    val appContext: Context = context.applicationContext
 
     val database: AppDatabase by lazy { AppDatabase.create(appContext) }
     val settings: SettingsStore by lazy { SettingsStore(appContext.settingsDataStore) }
@@ -56,7 +56,7 @@ class AppContainer(context: Context) {
     val sync: SyncManager by lazy { SyncManager(api, database, settings) }
     val runner: ShortcutRunner by lazy { ShortcutRunner(api, database.shortcutDao()) }
     val runStates: RunStateStore by lazy { RunStateStore(appContext) }
-    val bankMessages: BankMessageInbox by lazy { BankMessageInbox(database) }
+    val bankMessages: BankMessageInbox by lazy { BankMessageInbox(appContext, database) }
     val smsCapture = SmsCapture()
     /** For work that must outlive the screen that started it, like a sync. */
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)

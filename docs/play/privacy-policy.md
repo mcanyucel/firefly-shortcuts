@@ -18,7 +18,9 @@ This policy covers the official builds from Google Play and the GitHub releases.
 
 **Your financial data.** To let you build shortcuts, the app downloads the names of your accounts, categories, budgets, bills, piggy banks and tags from your server. When you run a shortcut, the app sends that transaction (amount, accounts, date, and the category, budget, bill, piggy bank, tags and description you chose) to your server. The shortcuts you create and the downloaded lists are stored on your phone.
 
-**Nothing else.** The app doesn't read your contacts, location, files or any other data on your phone, and it doesn't collect device identifiers.
+**Bank SMS (GitHub build only).** If you allow it, the GitHub build reads incoming SMS to turn your bank's messages into transactions. Each SMS is checked once, on your phone, against the templates you made. A message that no template recognises is dropped and never stored. For one that is recognised, the app keeps only what the template read (amount, currency, date, merchant and the last digits of the card) until it's sent to your server or you discard it. The message you build a template from is stored with that template. The Google Play build doesn't ask for SMS access and can't read SMS.
+
+**Nothing else.** Apart from the SMS above, the app doesn't read your contacts, location, files or any other data on your phone, and it doesn't collect device identifiers.
 
 ## Where the data goes
 
@@ -28,11 +30,11 @@ When you sign in with OAuth, the app opens your browser at your Firefly III serv
 
 ## Backups
 
-If Android backup is turned on for your phone, Android may include the app's shortcuts and settings in your Google backup, under your own Google account. Your sign-in tokens can't be read from a backup, because the key that encrypts them never leaves the phone. After restoring onto a new phone, you sign in again.
+If Android backup is turned on for your phone, Android may include the app's shortcuts, SMS templates and settings in your Google backup, under your own Google account. Your sign-in tokens can't be read from a backup, because the key that encrypts them never leaves the phone. After restoring onto a new phone, you sign in again.
 
 ## Keeping or deleting your data
 
-Everything the app stores is on your phone. To delete it, uninstall the app or clear its storage in Android's settings. Connecting the app to a different server or Firefly III user also deletes the shortcuts and lists from the previous one.
+Everything the app stores is on your phone. To delete it, uninstall the app or clear its storage in Android's settings. Connecting the app to a different server or Firefly III user also deletes the shortcuts, lists and unsent bank messages from the previous one; SMS templates are kept.
 
 Data on your Firefly III server, including transactions the app created, is managed in Firefly III and isn't affected by uninstalling the app.
 

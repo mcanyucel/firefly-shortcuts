@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -36,6 +37,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -52,6 +54,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -145,6 +148,24 @@ fun SmsTemplateEditorScreen(templateId: Long, onDone: () -> Unit) {
             }
             if (vm.action == SmsAction.IGNORE) {
                 Hint("For messages that should never become a transaction, like declined payments.")
+            } else if (BuildConfig.SMS_ENABLED) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .toggleable(vm.autoPost, role = Role.Switch, onValueChange = { vm.autoPost = it }),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Send to Firefly without asking", style = MaterialTheme.typography.bodyLarge)
+                        Hint(
+                            "Only when the message has an amount and a merchant, its card already has an " +
+                                "account (picked the first time you review one), and the amount is in that " +
+                                "account's currency. Anything else waits for your review."
+                        )
+                    }
+                    Switch(checked = vm.autoPost, onCheckedChange = null)
+                }
             }
 
             SectionTitle("Message")

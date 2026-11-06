@@ -55,13 +55,15 @@ import com.mustafacanyucel.firefly_shortcuts.BuildConfig
 import com.mustafacanyucel.firefly_shortcuts.R
 import com.mustafacanyucel.firefly_shortcuts.appContainer
 import com.mustafacanyucel.firefly_shortcuts.data.db.BankMessageEntity
+import com.mustafacanyucel.firefly_shortcuts.data.db.BankMessageStatus
+import com.mustafacanyucel.firefly_shortcuts.inbox.BankNotifications
+import com.mustafacanyucel.firefly_shortcuts.inbox.summary
 import com.mustafacanyucel.firefly_shortcuts.data.db.SmsTemplateEntity
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
+import android.os.Build
 
 class SmsTemplatesViewModel(private val container: AppContainer) : ViewModel() {
     /** Null until the first read. */
@@ -93,9 +95,13 @@ fun SmsTemplatesScreen(
     val templates by vm.templates.collectAsStateWithLifecycle()
     val bankMessages by vm.bankMessages.collectAsStateWithLifecycle()
 
-    // Checked again on return from the app's settings, where it may have been allowed.
+    // Checked again on return from the app's settings, where they may have been allowed.
     var canReceive by remember { mutableStateOf(context.canReceiveSms()) }
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { canReceive = context.canReceiveSms() }
+    var canNotify by remember { mutableStateOf(BankNotifications.allowed(context)) }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        canReceive = context.canReceiveSms()
+        canNotify = BankNotifications.allowed(context)
+    }
 
     Scaffold(
         topBar = {
@@ -121,6 +127,8 @@ fun SmsTemplatesScreen(
         ) {
             if (BuildConfig.SMS_ENABLED && !canReceive) {
                 item { SmsPermissionCard(onGranted = { canReceive = true }) }
+            } else if (BuildConfig.SMS_ENABLED && !canNotify) {
+                item { NotificationPermissionCard(onGranted = { canNotify = BankNotifications.allowed(context) }) }
             }
             item {
                 Text(
@@ -160,7 +168,7 @@ fun SmsTemplatesScreen(
                         Column(Modifier.weight(1f)) {
                             Text("Read from SMS", style = MaterialTheme.typography.titleMedium)
                             Text(
-                                "Not sent to Firefly yet.",
+                                "Tap one to review it and send it to Firefly.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -168,7 +176,11 @@ fun SmsTemplatesScreen(
                         TextButton(onClick = vm::clearBankMessages) { Text("Clear") }
                     }
                 }
-                items(bankMessages, key = { "message-${it.id}" }) { BankMessageRow(it) }
+                items(bankMessages, key = { "message-${it.id}" }) { message ->
+                    BankMessageRow(message, onClick = {
+                        context.startActivity(BankReviewActivity.intent(context, message.id))
+                    })
+                }
             }
         }
     }
@@ -214,18 +226,57 @@ private fun SmsPermissionCard(onGranted: () -> Unit) {
 }
 
 @Composable
-private fun BankMessageRow(message: BankMessageEntity) {
-    val amount = message.amount?.let { listOfNotNull(it, message.currency).joinToString(" ") } ?: "No amount"
-    val date = message.date?.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM))
-    val time = message.time?.format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT))
-    val details = listOfNotNull(
-        message.templateName,
-        listOfNotNull(date, time).joinToString(" ").ifEmpty { null },
-        message.cardEnding?.let { "card $it" },
-    )
+private fun NotificationPermissionCard(onGranted: () -> Unit) {
+    val context = LocalContext.current
+    var asked by rememberSaveable { mutableStateOf(false) }
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        asked = true
+        if (granted) onGranted()
+    }
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
+        modifier = Modifier.fillMaxWidth().padding(16.dp),
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Notifications are off", style = MaterialTheme.typography.titleMedium)
+            Text(
+                "Bank SMS that a template reads still show up here, but you won't be told about " +
+                    "them, or when sending one fails."
+            )
+            val canAsk = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !asked
+            if (canAsk) {
+                Button(onClick = { launcher.launch(Manifest.permission.POST_NOTIFICATIONS) }) {
+                    Text("Allow notifications")
+                }
+            } else {
+                OutlinedButton(onClick = {
+                    context.startActivity(
+                        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                            .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                    )
+                }) { Text("Open notification settings") }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BankMessageRow(message: BankMessageEntity, onClick: () -> Unit) {
+    val status = when (message.status) {
+        BankMessageStatus.PENDING -> "${message.action.label} · waiting for review"
+        BankMessageStatus.SENDING -> "Sending to Firefly…"
+        BankMessageStatus.FAILED -> "Couldn't send: ${message.error}"
+    }
     ListItem(
-        headlineContent = { Text(listOfNotNull(amount, message.merchant).joinToString(" · ")) },
-        supportingContent = { Text(details.joinToString(" · ")) },
-        overlineContent = { Text(message.action.label) },
+        headlineContent = { Text(message.summary) },
+        supportingContent = { Text(message.details) },
+        overlineContent = {
+            Text(
+                status,
+                color = if (message.status == BankMessageStatus.FAILED) MaterialTheme.colorScheme.error
+                else MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        },
+        modifier = if (message.status == BankMessageStatus.SENDING) Modifier else Modifier.clickable(onClick = onClick),
     )
 }

@@ -19,12 +19,14 @@ import androidx.room.TypeConverters
         ShortcutTagEntity::class,
         SmsTemplateEntity::class,
         BankMessageEntity::class,
+        CardAccountEntity::class,
     ],
-    version = 4,
+    version = 5,
     autoMigrations = [
         AutoMigration(from = 1, to = 2), // shortcuts.askAmount
         AutoMigration(from = 2, to = 3), // sms_templates
         AutoMigration(from = 3, to = 4), // bank_messages
+        AutoMigration(from = 4, to = 5), // bank_messages.status and error, card_accounts
     ],
 )
 @TypeConverters(Converters::class)

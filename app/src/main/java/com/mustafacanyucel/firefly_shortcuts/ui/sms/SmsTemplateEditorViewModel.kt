@@ -42,6 +42,7 @@ class SmsTemplateEditorViewModel(
     var senders by mutableStateOf("")
     var action by mutableStateOf(SmsAction.WITHDRAWAL)
     var decimalMark by mutableStateOf<Char?>(null)
+    var autoPost by mutableStateOf(false)
 
     /** The text in the paste box, before it's used as the sample. */
     var draftSample by mutableStateOf("")
@@ -103,6 +104,7 @@ class SmsTemplateEditorViewModel(
                 senders = t.senders.joinToString(", ")
                 action = t.action
                 decimalMark = t.decimalMark
+                autoPost = t.autoPost
                 loadSample(entity.sample)
                 val found = marksFor(t, sample, pieces)
                 marks = found.orEmpty()
@@ -119,6 +121,7 @@ class SmsTemplateEditorViewModel(
             parts = buildParts(sample, pieces, marks),
             action = action,
             decimalMark = decimalMark.takeIf { marks.any { it.kind == FieldKind.AMOUNT } },
+            autoPost = autoPost && action != SmsAction.IGNORE,
         )
 
     /** What the template reads from its own sample, once something is marked. */
